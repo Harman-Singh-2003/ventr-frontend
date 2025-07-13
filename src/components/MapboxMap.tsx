@@ -3,8 +3,10 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
+import ReactDOMServer from 'react-dom/server';
 import SearchBox from './SearchBox';
 import ClickPopup from './ClickPopup';
+import OpenRouteInMapsButton from './OpenRouteInMapsButton';
 import { routingService, ProcessedRoutes, RouteResponse } from '../services/routingService';
 import RoutingService from '../services/routingService';
 
@@ -40,6 +42,7 @@ export default function MapboxMap({ onRouteChange }: MapboxMapProps) {
   const [startMarker, setStartMarker] = useState<mapboxgl.Marker | null>(null);
   const [destinationMarker, setDestinationMarker] = useState<mapboxgl.Marker | null>(null);
   const [clickPopup, setClickPopup] = useState<ClickPopup | null>(null);
+  const clickPopupRef = useRef<mapboxgl.Popup | null>(null);
   
   // Input field values for the search box
   const [startInputValue, setStartInputValue] = useState('');
@@ -110,6 +113,10 @@ export default function MapboxMap({ onRouteChange }: MapboxMapProps) {
 
     // Cleanup function
     return () => {
+      if (clickPopupRef.current) {
+        clickPopupRef.current.remove();
+        clickPopupRef.current = null;
+      }
       if (map.current) {
         map.current.remove();
         map.current = null;
@@ -123,30 +130,77 @@ export default function MapboxMap({ onRouteChange }: MapboxMapProps) {
 
     map.current.on('click', async (e) => {
       const { lng, lat } = e.lngLat;
-      const { x, y } = e.point;
       
-      console.log(`📍 Map clicked at:`, { lng, lat, x, y });
+      console.log(`📍 Map clicked at:`, { lng, lat });
 
-      // Show click popup with coordinates
-      setClickPopup({
-        lng,
-        lat,
-        x,
-        y
+      // Close existing popup if any
+      if (clickPopupRef.current) {
+        clickPopupRef.current.remove();
+      }
+
+      // Create React component content as HTML string
+      const popupContent = ReactDOMServer.renderToString(
+        <ClickPopup
+          lng={lng}
+          lat={lat}
+          x={0} // Not needed for Mapbox popup
+          y={0} // Not needed for Mapbox popup
+          onSetLocation={handleSetLocation}
+          onClose={() => {}} // Will be handled by popup close event
+          isMapboxPopup={true}
+        />
+      );
+
+      // Create Mapbox popup
+      const popup = new mapboxgl.Popup({
+        closeButton: false, // We'll use our custom close button
+        closeOnClick: false,
+        maxWidth: '300px',
+        offset: [0, -10]
+      })
+        .setLngLat([lng, lat])
+        .setHTML(`<div id="popup-content">${popupContent}</div>`)
+        .addTo(map.current!);
+
+      // Store popup reference
+      clickPopupRef.current = popup;
+
+      // Add event listeners to the popup content after it's added to DOM
+      setTimeout(() => {
+        const popupElement = document.getElementById('popup-content');
+        if (popupElement) {
+          // Add click handlers for start/destination buttons
+          const startBtn = popupElement.querySelector('[data-action="start"]');
+          const destBtn = popupElement.querySelector('[data-action="destination"]');
+          const closeBtn = popupElement.querySelector('[data-action="close"]');
+
+          if (startBtn) {
+            startBtn.addEventListener('click', () => {
+              handleSetLocation(lng, lat, 'start');
+              popup.remove();
+            });
+          }
+
+          if (destBtn) {
+            destBtn.addEventListener('click', () => {
+              handleSetLocation(lng, lat, 'destination');
+              popup.remove();
+            });
+          }
+
+          if (closeBtn) {
+            closeBtn.addEventListener('click', () => {
+              popup.remove();
+            });
+          }
+        }
+      }, 0);
+
+      // Handle popup close event
+      popup.on('close', () => {
+        clickPopupRef.current = null;
       });
     });
-
-    // Close popup when map moves/zooms/rotates
-    const closePopupOnMove = () => {
-      if (clickPopup) {
-        setClickPopup(null);
-      }
-    };
-
-    map.current.on('move', closePopupOnMove);
-    map.current.on('zoom', closePopupOnMove);
-    map.current.on('rotate', closePopupOnMove);
-    map.current.on('pitch', closePopupOnMove);
   };
 
   // Add start point marker with reverse geocoding
@@ -253,6 +307,10 @@ export default function MapboxMap({ onRouteChange }: MapboxMapProps) {
       destinationMarker.remove();
       setDestinationMarker(null);
     }
+    if (clickPopupRef.current) {
+      clickPopupRef.current.remove();
+      clickPopupRef.current = null;
+    }
     setStartPoint(null);
     setDestinationPoint(null);
     setClickPopup(null);
@@ -277,8 +335,7 @@ export default function MapboxMap({ onRouteChange }: MapboxMapProps) {
       await addDestinationMarker(lng, lat);
     }
 
-    // Hide popup after selection
-    setClickPopup(null);
+    // Popup is now handled by Mapbox and will be closed by the click handler
   };
 
   // Handle location selection from search
@@ -737,6 +794,12 @@ map.current.addLayer({
                       <div>Safety Score: {Math.round(routes.shortest.route_stats.safety_score * 100)}%</div>
                       <div>Crime Incidents: {routes.shortest.route_stats.crime_incidents_nearby}</div>
                     </div>
+                    <div className="mt-2">
+                      <OpenRouteInMapsButton 
+                        geojson={routes.shortest.route_geojson} 
+                        routeType="shortest" 
+                      />
+                    </div>
                   </div>
 
                   {/* Safe Route */}
@@ -750,6 +813,12 @@ map.current.addLayer({
                       <div>Time: {RoutingService.formatTime(routes.safe.route_stats.total_time_s)}</div>
                       <div>Safety Score: {Math.round(routes.safe.route_stats.safety_score * 100)}%</div>
                       <div>Crime Incidents: {routes.safe.route_stats.crime_incidents_nearby}</div>
+                    </div>
+                    <div className="mt-2">
+                      <OpenRouteInMapsButton 
+                        geojson={routes.safe.route_geojson} 
+                        routeType="safe" 
+                      />
                     </div>
                   </div>
 
@@ -782,17 +851,7 @@ map.current.addLayer({
         </div>
       )}
 
-      {/* Click Popup */}
-      {clickPopup && (
-        <ClickPopup
-          lng={clickPopup.lng}
-          lat={clickPopup.lat}
-          x={clickPopup.x}
-          y={clickPopup.y}
-          onSetLocation={handleSetLocation}
-          onClose={() => setClickPopup(null)}
-        />
-      )}
+      {/* Click Popup is now handled by Mapbox native popup */}
 
 
 
@@ -811,13 +870,6 @@ map.current.addLayer({
           zIndex: 1
         }} 
       />
-
-      {/* Crime Data Status */}
-      {!isLoading && !mapError && (
-        <div className="absolute bottom-4 left-4 bg-green-100 border border-green-400 text-green-700 px-3 py-2 rounded text-sm z-10">
-          ✅ 3D Buildings + Crime data + Point selection ready
-        </div>
-      )}
     </div>
   );
 } 
