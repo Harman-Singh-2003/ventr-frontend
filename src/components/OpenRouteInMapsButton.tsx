@@ -1,5 +1,5 @@
 import React from 'react';
-import { FaExternalLinkAlt } from 'react-icons/fa';
+import { ExternalLink, Navigation } from 'lucide-react';
 
 interface OpenRouteInMapsButtonProps {
   geojson: any;
@@ -56,24 +56,30 @@ const OpenRouteInMapsButton = ({ geojson, routeType = 'safe' }: OpenRouteInMapsB
   // Construct the final URL
   const googleMapsUrl = `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destination}${waypoints ? `&waypoints=${waypoints}` : ''}&travelmode=walking`;
 
-  const buttonColor = routeType === 'safe' ? 'bg-green-600 hover:bg-green-700' : 'bg-blue-600 hover:bg-blue-700';
-  const routeLabel = routeType === 'safe' ? 'Safe Route' : 'Shortest Route';
+  const routeLabel = routeType === 'safe' ? 'Safe Route' : 'Fastest Route';
 
   return (
     <a
       href={googleMapsUrl}
       target="_blank"
       rel="noopener noreferrer"
-      className={`
-        inline-flex items-center justify-center gap-2 px-3 py-2 
-        ${buttonColor} text-white text-xs font-medium
-        rounded-lg shadow-sm transition-all duration-150
-        hover:shadow-md active:scale-95
-      `}
+      className="
+        inline-flex items-center gap-1.5 px-2.5 py-1.5 
+        bg-white/80 border border-white/40 hover:border-white/60
+        text-slate-700 text-xs font-medium
+        rounded-lg hover:bg-white/90 transition-all duration-200
+        backdrop-blur-sm active:scale-95 group
+        shadow-sm hover:shadow-md
+      "
       title={`Open ${routeLabel} in Google Maps`}
     >
-      <FaExternalLinkAlt className="text-xs" />
-      Open in Maps
+      <img 
+        src="/Google_Maps_icon.png" 
+        alt="Google Maps" 
+        className="w-3.5 h-3.5"
+      />
+      <Navigation className="w-3 h-3 text-slate-500 group-hover:text-slate-700 transition-colors" />
+      <ExternalLink className="w-3 h-3 text-slate-400 group-hover:text-slate-600 transition-colors" />
     </a>
   );
 };
