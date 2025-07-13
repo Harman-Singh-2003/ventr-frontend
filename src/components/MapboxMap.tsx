@@ -720,23 +720,9 @@ map.current.addLayer({
   };
 
   return (
-    <div className="w-full h-full flex">
-      {/* Sidebar */}
-      <Sidebar
-        startPoint={startPoint}
-        destinationPoint={destinationPoint}
-        startInputValue={startInputValue}
-        destinationInputValue={destinationInputValue}
-        routes={routes}
-        isLoadingRoutes={isLoadingRoutes}
-        routeError={routeError}
-        onLocationSelect={handleLocationSelect}
-        onInputChange={handleInputChange}
-        onClear={clearPoints}
-      />
-
-      {/* Map Section */}
-      <div className="flex-1 relative">
+    <div className="w-full h-full relative">
+      {/* Map Section - Full width background */}
+      <div className="absolute inset-0">
         {/* Loading State */}
         {isLoading && (
           <div className="absolute inset-0 bg-gray-100 flex items-center justify-center z-50">
@@ -768,6 +754,22 @@ map.current.addLayer({
         <div 
           ref={mapContainer} 
           className="w-full h-full"
+        />
+      </div>
+
+      {/* Glassmorphic Sidebar - Floating on top */}
+      <div className="absolute top-0 left-0 z-10 h-full">
+        <Sidebar
+          startPoint={startPoint}
+          destinationPoint={destinationPoint}
+          startInputValue={startInputValue}
+          destinationInputValue={destinationInputValue}
+          routes={routes}
+          isLoadingRoutes={isLoadingRoutes}
+          routeError={routeError}
+          onLocationSelect={handleLocationSelect}
+          onInputChange={handleInputChange}
+          onClear={clearPoints}
         />
       </div>
     </div>

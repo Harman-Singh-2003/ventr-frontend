@@ -64,22 +64,21 @@ const OpenRouteInMapsButton = ({ geojson, routeType = 'safe' }: OpenRouteInMapsB
       target="_blank"
       rel="noopener noreferrer"
       className="
-        inline-flex items-center gap-1.5 px-2.5 py-1.5 
-        bg-white/80 border border-white/40 hover:border-white/60
-        text-slate-700 text-xs font-medium
-        rounded-lg hover:bg-white/90 transition-all duration-200
-        backdrop-blur-sm active:scale-95 group
-        shadow-sm hover:shadow-md
+        inline-flex items-center gap-3 px-6 py-3 
+        bg-white/20 border border-white/30 
+        text-slate-800 font-semibold hover:text-slate-900
+        rounded-xl hover:bg-white/30 transition-all duration-300
+        active:scale-95 group
       "
       title={`Open ${routeLabel} in Google Maps`}
     >
       <img 
         src="/Google_Maps_icon.png" 
         alt="Google Maps" 
-        className="w-3.5 h-3.5"
+        className="w-5 h-5"
       />
-      <Navigation className="w-3 h-3 text-slate-500 group-hover:text-slate-700 transition-colors" />
-      <ExternalLink className="w-3 h-3 text-slate-400 group-hover:text-slate-600 transition-colors" />
+      <Navigation className="w-5 h-5 text-slate-600 group-hover:text-slate-800 transition-colors" />
+      <ExternalLink className="w-5 h-5 text-slate-600 group-hover:text-slate-800 transition-colors" />
     </a>
   );
 };
