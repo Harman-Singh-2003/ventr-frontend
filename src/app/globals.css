@@ -116,3 +116,37 @@ body {
   scrollbar-width: thin;
   scrollbar-color: rgba(100, 116, 139, 0.4) rgba(255, 255, 255, 0.1);
 }
+
+/* Click popup - prevent Mapbox from repositioning */
+.click-popup .mapboxgl-popup-content {
+  background: transparent !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  border-radius: 0 !important;
+  pointer-events: auto !important;
+}
+
+.click-popup .mapboxgl-popup-tip {
+  display: none !important;
+}
+
+.click-popup {
+  pointer-events: auto !important;
+}
+
+/* Force the popup to stay anchored at bottom */
+.click-popup.mapboxgl-popup-anchor-bottom .mapboxgl-popup-content {
+  margin-bottom: 12px !important;
+}
+
+/* Prevent Mapbox from changing the anchor dynamically */
+.click-popup.mapboxgl-popup-anchor-top .mapboxgl-popup-content,
+.click-popup.mapboxgl-popup-anchor-left .mapboxgl-popup-content,
+.click-popup.mapboxgl-popup-anchor-right .mapboxgl-popup-content,
+.click-popup.mapboxgl-popup-anchor-top-left .mapboxgl-popup-content,
+.click-popup.mapboxgl-popup-anchor-top-right .mapboxgl-popup-content,
+.click-popup.mapboxgl-popup-anchor-bottom-left .mapboxgl-popup-content,
+.click-popup.mapboxgl-popup-anchor-bottom-right .mapboxgl-popup-content {
+  margin: 0 !important;
+  margin-bottom: 12px !important;
+}

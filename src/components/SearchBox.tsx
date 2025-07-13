@@ -234,21 +234,6 @@ export default function SearchBox({
     <div ref={searchContainerRef} className={`relative ${className}`}>
       {/* Integrated Container with Grey Border */}
       <div className="bg-white/10 border border-slate-300 rounded-xl overflow-hidden shadow-inner">
-        
-        {/* Header */}
-        <div className="px-5 py-3 border-b border-slate-300">
-          <div className="flex items-center justify-between">
-            <h3 className="text-lg font-bold text-slate-800">Where to?</h3>
-            {(startValue || destinationValue) && onClear && (
-              <button
-                onClick={onClear}
-                className="text-sm text-slate-600 hover:text-slate-800 px-2 py-1 hover:bg-white/20 rounded transition-colors"
-              >
-                Clear all
-              </button>
-            )}
-          </div>
-        </div>
 
         {/* Input Fields */}
         <div className="relative">
@@ -256,13 +241,13 @@ export default function SearchBox({
           {/* Start Location */}
           <div className="relative border-b border-slate-300">
             <div className="flex items-center px-5 py-4">
-              <div className="flex-1">
+              <div className="flex-1 relative">
                 <input
                   type="text"
                   value={startQuery}
                   onChange={(e) => handleInputChange(e, 'start')}
-                  placeholder="Pickup location"
-                  className="w-full text-slate-800 placeholder-slate-500 bg-transparent border-none outline-none text-base focus:bg-white/20 rounded transition-colors"
+                  placeholder="Add starting point"
+                  className="w-full text-slate-800 placeholder-slate-500 bg-transparent border-none outline-none text-base focus:bg-white/20 rounded transition-colors pr-8"
                   onFocus={() => {
                     setActiveField('start');
                     if (suggestions.length > 0 && startQuery.length >= 2) {
@@ -270,8 +255,20 @@ export default function SearchBox({
                     }
                   }}
                 />
-                {!startQuery && (
-                  <p className="text-sm text-slate-600 mt-1">Enter pickup address</p>
+                {startQuery && (
+                  <button
+                    onClick={() => {
+                      setStartQuery('');
+                      if (onInputChange) {
+                        onInputChange('', 'start');
+                      }
+                    }}
+                    className="absolute right-0 top-1/2 transform -translate-y-1/2 w-6 h-6 rounded-full bg-slate-400/20 hover:bg-slate-400/40 flex items-center justify-center transition-colors"
+                  >
+                    <svg className="w-3 h-3 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
                 )}
               </div>
               {isLoading && activeField === 'start' && (
@@ -285,13 +282,13 @@ export default function SearchBox({
           {/* Destination Location */}
           <div className="relative">
             <div className="flex items-center px-5 py-4">
-              <div className="flex-1">
+              <div className="flex-1 relative">
                 <input
                   type="text"
                   value={destinationQuery}
                   onChange={(e) => handleInputChange(e, 'destination')}
-                  placeholder="Where to?"
-                  className="w-full text-slate-800 placeholder-slate-500 bg-transparent border-none outline-none text-base focus:bg-white/20 rounded transition-colors"
+                  placeholder="Add destination"
+                  className="w-full text-slate-800 placeholder-slate-500 bg-transparent border-none outline-none text-base focus:bg-white/20 rounded transition-colors pr-8"
                   onFocus={() => {
                     setActiveField('destination');
                     if (suggestions.length > 0 && destinationQuery.length >= 2) {
@@ -299,6 +296,21 @@ export default function SearchBox({
                     }
                   }}
                 />
+                {destinationQuery && (
+                  <button
+                    onClick={() => {
+                      setDestinationQuery('');
+                      if (onInputChange) {
+                        onInputChange('', 'destination');
+                      }
+                    }}
+                    className="absolute right-0 top-1/2 transform -translate-y-1/2 w-6 h-6 rounded-full bg-slate-400/20 hover:bg-slate-400/40 flex items-center justify-center transition-colors"
+                  >
+                    <svg className="w-3 h-3 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                )}
               </div>
               {isLoading && activeField === 'destination' && (
                 <div className="flex-shrink-0 ml-3">

@@ -65,7 +65,7 @@ export default function Sidebar({
 
         {/* Mobile Bottom Sheet with Route Info - Fixed at bottom */}
         {startPoint && destinationPoint && (
-          <div className="absolute bottom-0 left-0 right-0 z-20 bg-white/15 backdrop-blur-xl border-t border-white/30 shadow-2xl max-h-[35vh] overflow-y-auto sidebar-scroll">
+          <div className="absolute bottom-0 left-0 right-0 z-20 bg-white/15 backdrop-blur-xl border-t border-white/30 shadow-2xl max-h-[25vh] overflow-y-auto sidebar-scroll">
             <div className="p-3 space-y-3">
               {/* Loading state */}
               {isLoadingRoutes && (
@@ -123,38 +123,39 @@ export default function Sidebar({
                         </div>
                       </div>
                       
-                      <div className="grid grid-cols-2 gap-2 mb-2">
-                        <div className="bg-white/20 border border-white/30 rounded-md p-2">
-                          <div className="flex items-center space-x-1">
-                            <Route className="w-3 h-3 text-emerald-600" />
-                            <div className="flex-1">
-                              <p className="text-xs text-slate-600">Distance</p>
-                              <p className="text-sm font-bold text-slate-800">{RoutingService.formatDistance(routes.safe.route_stats.total_distance_m)}</p>
-                              <p className="text-xs text-amber-600 font-medium">
-                                +{RoutingService.formatDistance(routes.safe.route_stats.total_distance_m - routes.shortest.route_stats.total_distance_m)}
-                              </p>
+                      <div className="flex items-center gap-2">
+                        <div className="flex-1 grid grid-cols-2 gap-2">
+                          <div className="bg-white/20 border border-white/30 rounded-md p-2">
+                            <div className="flex items-center space-x-1">
+                              <Route className="w-6 h-6 text-emerald-600" />
+                              <div className="flex-1 pl-2">
+                                <p className="text-xs text-slate-600">Distance</p>
+                                <p className="text-sm font-bold text-slate-800">{RoutingService.formatDistance(routes.safe.route_stats.total_distance_m)}</p>
+                                <p className="text-xs text-amber-600 font-medium">
+                                  +{RoutingService.formatDistance(routes.safe.route_stats.total_distance_m - routes.shortest.route_stats.total_distance_m)}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                          <div className="bg-white/20 border border-white/30 rounded-md p-2">
+                            <div className="flex items-center space-x-1">
+                              <Clock className="w-6 h-6 text-emerald-600" />
+                              <div className="flex-1 pl-2">
+                                <p className="text-xs text-slate-600">Time</p>
+                                <p className="text-sm font-bold text-slate-800">{RoutingService.formatTime(routes.safe.route_stats.total_time_s)}</p>
+                                <p className="text-xs text-amber-600 font-medium">
+                                  +{RoutingService.formatTime(routes.safe.route_stats.total_time_s - routes.shortest.route_stats.total_time_s)}
+                                </p>
+                              </div>
                             </div>
                           </div>
                         </div>
-                        <div className="bg-white/20 border border-white/30 rounded-md p-2">
-                          <div className="flex items-center space-x-1">
-                            <Clock className="w-3 h-3 text-emerald-600" />
-                            <div className="flex-1">
-                              <p className="text-xs text-slate-600">Time</p>
-                              <p className="text-sm font-bold text-slate-800">{RoutingService.formatTime(routes.safe.route_stats.total_time_s)}</p>
-                              <p className="text-xs text-amber-600 font-medium">
-                                +{RoutingService.formatTime(routes.safe.route_stats.total_time_s - routes.shortest.route_stats.total_time_s)}
-                              </p>
-                            </div>
-                          </div>
+                        <div className="flex-shrink-0">
+                          <OpenRouteInMapsButton 
+                            geojson={routes.safe.route_geojson} 
+                            routeType="safe" 
+                          />
                         </div>
-                      </div>
-
-                      <div className="flex justify-end">
-                        <OpenRouteInMapsButton 
-                          geojson={routes.safe.route_geojson} 
-                          routeType="safe" 
-                        />
                       </div>
                     </div>
                   </div>
@@ -172,36 +173,38 @@ export default function Sidebar({
                         </div>
                       </div>
                       
-                      <div className="grid grid-cols-2 gap-2 mb-2">
-                        <div className="bg-white/20 border border-white/30 rounded-md p-2">
-                          <div className="flex items-center space-x-1">
-                            <Route className="w-3 h-3 text-blue-600" />
-                            <div>
-                              <p className="text-xs text-slate-600">Distance</p>
-                              <p className="text-sm font-bold text-slate-800">{RoutingService.formatDistance(routes.shortest.route_stats.total_distance_m)}</p>
+                      <div className="flex items-center gap-2">
+                        <div className="flex-1 grid grid-cols-2 gap-2">
+                          <div className="bg-white/20 border border-white/30 rounded-md p-2">
+                            <div className="flex items-center space-x-1">
+                              <Route className="w-6 h-6 text-blue-600" />
+                              <div className="flex-1 pl-2">
+                                <p className="text-xs text-slate-600">Distance</p>
+                                <p className="text-sm font-bold text-slate-800">{RoutingService.formatDistance(routes.shortest.route_stats.total_distance_m)}</p>
+                              </div>
+                            </div>
+                          </div>
+                          <div className="bg-white/20 border border-white/30 rounded-md p-2">
+                            <div className="flex items-center space-x-1">
+                              <Clock className="w-6 h-6 text-blue-600" />
+                              <div className="flex-1 pl-2">
+                                <p className="text-xs text-slate-600">Time</p>
+                                <p className="text-sm font-bold text-slate-800">{RoutingService.formatTime(routes.shortest.route_stats.total_time_s)}</p>
+                              </div>
                             </div>
                           </div>
                         </div>
-                        <div className="bg-white/20 border border-white/30 rounded-md p-2">
-                          <div className="flex items-center space-x-1">
-                            <Clock className="w-3 h-3 text-blue-600" />
-                            <div>
-                              <p className="text-xs text-slate-600">Time</p>
-                              <p className="text-sm font-bold text-slate-800">{RoutingService.formatTime(routes.shortest.route_stats.total_time_s)}</p>
-                            </div>
-                          </div>
+                        <div className="flex-shrink-0">
+                          <OpenRouteInMapsButton 
+                            geojson={routes.shortest.route_geojson} 
+                            routeType="shortest" 
+                          />
                         </div>
-                      </div>
-
-                      <div className="flex justify-end">
-                        <OpenRouteInMapsButton 
-                          geojson={routes.shortest.route_geojson} 
-                          routeType="shortest" 
-                        />
                       </div>
                     </div>
                   </div>
-                </div>              )}
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -223,7 +226,7 @@ export default function Sidebar({
       </div>
 
       {/* Desktop Layout */}
-      <aside className="hidden md:flex absolute top-4 left-4 w-[36rem] max-h-[calc(100vh-2rem)] bg-white/15 backdrop-blur-xl border border-white/30 shadow-2xl rounded-2xl flex-col overflow-hidden">
+      <aside className="hidden md:flex absolute top-4 left-4 w-[32rem] max-h-[calc(100vh-2rem)] bg-white/15 backdrop-blur-xl border border-white/30 shadow-2xl rounded-2xl flex-col overflow-hidden">
         {/* Header */}
         <div className="p-5 border-b border-white/20">
           <div className="flex items-center space-x-4">
@@ -309,51 +312,40 @@ export default function Sidebar({
                         </div>
                       </div>
                       
-                      {/* Primary stats */}
-                      <div className="grid grid-cols-2 gap-4 mb-5">
-                        <div className="bg-white/20 border border-white/30 rounded-xl p-4">
-                          <div className="flex items-center space-x-3">
-                            <Route className="w-6 h-6 text-emerald-600" />
-                            <div>
-                              <p className="text-slate-600 text-sm">Distance</p>
-                              <p className="text-xl font-bold text-slate-800">{RoutingService.formatDistance(routes.safe.route_stats.total_distance_m)}</p>
+                      {/* Primary stats with Open in Maps button */}
+                      <div className="flex items-end gap-4 mb-5">
+                        <div className="flex-1 grid grid-cols-2 gap-4">
+                          <div className="bg-white/20 border border-white/30 rounded-xl p-4">
+                            <div className="flex items-center space-x-3">
+                              <Route className="w-6 h-6 text-emerald-600" />
+                              <div>
+                                <p className="text-slate-600 text-sm">Distance</p>
+                                <p className="text-xl font-bold text-slate-800">{RoutingService.formatDistance(routes.safe.route_stats.total_distance_m)}</p>
+                                <p className="text-sm text-amber-600 font-medium">
+                                  +{RoutingService.formatDistance(routes.safe.route_stats.total_distance_m - routes.shortest.route_stats.total_distance_m)}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                          <div className="bg-white/20 border border-white/30 rounded-xl p-4">
+                            <div className="flex items-center space-x-3">
+                              <Clock className="w-6 h-6 text-emerald-600" />
+                              <div>
+                                <p className="text-slate-600 text-sm">Time</p>
+                                <p className="text-xl font-bold text-slate-800">{RoutingService.formatTime(routes.safe.route_stats.total_time_s)}</p>
+                                <p className="text-sm text-amber-600 font-medium">
+                                  +{RoutingService.formatTime(routes.safe.route_stats.total_time_s - routes.shortest.route_stats.total_time_s)}
+                                </p>
+                              </div>
                             </div>
                           </div>
                         </div>
-                        <div className="bg-white/20 border border-white/30 rounded-xl p-4">
-                          <div className="flex items-center space-x-3">
-                            <Clock className="w-6 h-6 text-emerald-600" />
-                            <div>
-                              <p className="text-slate-600 text-sm">Time</p>
-                              <p className="text-xl font-bold text-slate-800">{RoutingService.formatTime(routes.safe.route_stats.total_time_s)}</p>
-                            </div>
-                          </div>
+                        <div className="flex-shrink-0">
+                          <OpenRouteInMapsButton 
+                            geojson={routes.safe.route_geojson} 
+                            routeType="safe" 
+                          />
                         </div>
-                      </div>
-
-                      {/* Comparison stats */}
-                      <div className="bg-white/10 border border-white/20 rounded-xl p-4 mb-5">
-                        <div className="grid grid-cols-2 gap-4 text-sm">
-                          <div className="text-center">
-                            <p className="text-slate-600">Extra Time</p>
-                            <p className="text-lg font-bold text-amber-600">
-                              +{RoutingService.formatTime(routes.safe.route_stats.total_time_s - routes.shortest.route_stats.total_time_s)}
-                            </p>
-                          </div>
-                          <div className="text-center">
-                            <p className="text-slate-600">Extra Distance</p>
-                            <p className="text-lg font-bold text-amber-600">
-                              +{RoutingService.formatDistance(routes.safe.route_stats.total_distance_m - routes.shortest.route_stats.total_distance_m)}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="flex justify-end">
-                        <OpenRouteInMapsButton 
-                          geojson={routes.safe.route_geojson} 
-                          routeType="safe" 
-                        />
                       </div>
                     </div>
                   </div>
@@ -371,32 +363,33 @@ export default function Sidebar({
                         </div>
                       </div>
                       
-                      <div className="grid grid-cols-2 gap-4 mb-5">
-                        <div className="bg-white/20 border border-white/30 rounded-xl p-4">
-                          <div className="flex items-center space-x-3">
-                            <Route className="w-6 h-6 text-blue-600" />
-                            <div>
-                              <p className="text-slate-600 text-sm">Distance</p>
-                              <p className="text-xl font-bold text-slate-800">{RoutingService.formatDistance(routes.shortest.route_stats.total_distance_m)}</p>
+                      <div className="flex items-end gap-4">
+                        <div className="flex-1 grid grid-cols-2 gap-4">
+                          <div className="bg-white/20 border border-white/30 rounded-xl p-4">
+                            <div className="flex items-center space-x-3">
+                              <Route className="w-6 h-6 text-blue-600" />
+                              <div>
+                                <p className="text-slate-600 text-sm">Distance</p>
+                                <p className="text-xl font-bold text-slate-800">{RoutingService.formatDistance(routes.shortest.route_stats.total_distance_m)}</p>
+                              </div>
+                            </div>
+                          </div>
+                          <div className="bg-white/20 border border-white/30 rounded-xl p-4">
+                            <div className="flex items-center space-x-3">
+                              <Clock className="w-6 h-6 text-blue-600" />
+                              <div>
+                                <p className="text-slate-600 text-sm">Time</p>
+                                <p className="text-xl font-bold text-slate-800">{RoutingService.formatTime(routes.shortest.route_stats.total_time_s)}</p>
+                              </div>
                             </div>
                           </div>
                         </div>
-                        <div className="bg-white/20 border border-white/30 rounded-xl p-4">
-                          <div className="flex items-center space-x-3">
-                            <Clock className="w-6 h-6 text-blue-600" />
-                            <div>
-                              <p className="text-slate-600 text-sm">Time</p>
-                              <p className="text-xl font-bold text-slate-800">{RoutingService.formatTime(routes.shortest.route_stats.total_time_s)}</p>
-                            </div>
-                          </div>
+                        <div className="flex-shrink-0">
+                          <OpenRouteInMapsButton 
+                            geojson={routes.shortest.route_geojson} 
+                            routeType="shortest" 
+                          />
                         </div>
-                      </div>
-
-                      <div className="flex justify-end">
-                        <OpenRouteInMapsButton 
-                          geojson={routes.shortest.route_geojson} 
-                          routeType="shortest" 
-                        />
                       </div>
                     </div>
                   </div>

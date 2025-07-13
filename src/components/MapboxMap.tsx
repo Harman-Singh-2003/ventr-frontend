@@ -152,16 +152,41 @@ export default function MapboxMap({ onRouteChange }: MapboxMapProps) {
         />
       );
 
-      // Create Mapbox popup
+      // Create Mapbox popup with fixed positioning
       const popup = new mapboxgl.Popup({
         closeButton: false, // We'll use our custom close button
         closeOnClick: false,
         maxWidth: '300px',
-        offset: [0, -10]
+        offset: [0, -15],
+        anchor: 'bottom', // Force anchor to bottom
+        focusAfterOpen: false,
+        className: 'click-popup'
       })
         .setLngLat([lng, lat])
         .setHTML(`<div id="popup-content">${popupContent}</div>`)
         .addTo(map.current!);
+
+      // Override Mapbox's automatic repositioning by locking the anchor
+      setTimeout(() => {
+        const popupElement = popup.getElement();
+        if (popupElement) {
+          // Force the popup to maintain bottom anchor
+          popupElement.className = popupElement.className.replace(/mapboxgl-popup-anchor-\w+/g, '');
+          popupElement.classList.add('mapboxgl-popup-anchor-bottom');
+          
+          // Override the popup's update method to prevent repositioning
+          const originalUpdate = (popup as any)._update;
+          (popup as any)._update = function() {
+            originalUpdate.call(this);
+            // Restore bottom anchor after any update
+            const element = this.getElement();
+            if (element) {
+              element.className = element.className.replace(/mapboxgl-popup-anchor-\w+/g, '');
+              element.classList.add('mapboxgl-popup-anchor-bottom');
+            }
+          };
+        }
+      }, 0);
 
       // Store popup reference
       clickPopupRef.current = popup;
@@ -538,9 +563,12 @@ export default function MapboxMap({ onRouteChange }: MapboxMapProps) {
       if (allCoordinates.length > 0) {
         const bounds = new mapboxgl.LngLatBounds();
         allCoordinates.forEach(coord => bounds.extend(coord as [number, number]));
+        const isMobile = window.innerWidth <= 768; // Adjust based on your breakpoint  
+        // Use larger padding for mobile to avoid clipping
+        const padding = isMobile ? 100 : 300; // Adjust padding based on device
         
         map.current.fitBounds(bounds, {
-          padding: 100,
+          padding: padding,
           duration: 2000
         });
       }
