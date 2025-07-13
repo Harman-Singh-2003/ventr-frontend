@@ -4,6 +4,7 @@ import React, { useRef, useEffect, useState, useCallback } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import SearchBox from './SearchBox';
+import ClickPopup from './ClickPopup';
 import { routingService, ProcessedRoutes, RouteResponse } from '../services/routingService';
 import RoutingService from '../services/routingService';
 
@@ -134,6 +135,18 @@ export default function MapboxMap({ onRouteChange }: MapboxMapProps) {
         y
       });
     });
+
+    // Close popup when map moves/zooms/rotates
+    const closePopupOnMove = () => {
+      if (clickPopup) {
+        setClickPopup(null);
+      }
+    };
+
+    map.current.on('move', closePopupOnMove);
+    map.current.on('zoom', closePopupOnMove);
+    map.current.on('rotate', closePopupOnMove);
+    map.current.on('pitch', closePopupOnMove);
   };
 
   // Add start point marker with reverse geocoding
@@ -771,44 +784,14 @@ map.current.addLayer({
 
       {/* Click Popup */}
       {clickPopup && (
-        <div 
-          className="absolute z-30 bg-white rounded-lg shadow-xl border border-gray-200 p-4 min-w-48"
-          style={{
-            left: `${clickPopup.x}px`,
-            top: `${clickPopup.y}px`,
-            transform: 'translate(-50%, -100%)',
-            marginTop: '-10px'
-          }}
-        >
-          <div className="text-center mb-3">
-            <div className="text-sm font-medium text-gray-900 mb-1">Location Coordinates</div>
-            <div className="text-xs text-gray-600 font-mono">
-              {clickPopup.lat.toFixed(6)}, {clickPopup.lng.toFixed(6)}
-            </div>
-          </div>
-          
-          <div className="flex gap-2">
-            <button
-              onClick={() => handleSetLocation(clickPopup.lng, clickPopup.lat, 'start')}
-              className="flex-1 px-3 py-2 bg-green-500 text-white text-xs font-medium rounded hover:bg-green-600 transition-colors"
-            >
-              Set as Start
-            </button>
-            <button
-              onClick={() => handleSetLocation(clickPopup.lng, clickPopup.lat, 'destination')}
-              className="flex-1 px-3 py-2 bg-red-500 text-white text-xs font-medium rounded hover:bg-red-600 transition-colors"
-            >
-              Set as End
-            </button>
-          </div>
-          
-          <button
-            onClick={() => setClickPopup(null)}
-            className="w-full mt-2 px-3 py-1 text-xs text-gray-500 hover:text-gray-700 transition-colors"
-          >
-            Cancel
-          </button>
-        </div>
+        <ClickPopup
+          lng={clickPopup.lng}
+          lat={clickPopup.lat}
+          x={clickPopup.x}
+          y={clickPopup.y}
+          onSetLocation={handleSetLocation}
+          onClose={() => setClickPopup(null)}
+        />
       )}
 
 
