@@ -66,12 +66,13 @@ export default function MapboxMap({ onRouteChange }: MapboxMapProps) {
     console.log('🗺️ Step 1: Initializing basic Mapbox map...');
 
     try {
-      // Initialize the map
       map.current = new mapboxgl.Map({
         container: mapContainer.current!,
-        style: 'mapbox://styles/mapbox/streets-v12', // Simple street style
-        center: [-79.3832, 43.6532], // Toronto coordinates
-        zoom: 11
+        style: 'mapbox://styles/mapbox/standard', 
+        center: [-79.3871, 43.6426], // Centered on the CN Tower
+        zoom: 15,
+        pitch: 60,
+        antialias: true
       });
 
       // Add navigation controls
@@ -82,6 +83,9 @@ export default function MapboxMap({ onRouteChange }: MapboxMapProps) {
         console.log('✅ Step 1 Complete: Basic map loaded successfully!');
         setIsLoading(false);
         setMapError(null);
+        
+        // Enable 3D buildings
+        add3DBuildings();
         
         // Step 2: Import crime data
         addCrimeDataSource();
@@ -524,6 +528,20 @@ export default function MapboxMap({ onRouteChange }: MapboxMapProps) {
     }
   }, [startPoint, destinationPoint, calculateRoutes]);
 
+  const add3DBuildings = () => {
+    if (!map.current) return;
+
+    console.log('🏢 Enabling realistic 3D buildings...');
+    
+    try {
+      // This single line turns on the detailed 3D building models.
+      map.current.setConfigProperty('basemap', 'show3dBuildings', true);
+      console.log('✅ Realistic 3D buildings enabled!');
+    } catch (error) {
+      console.error('❌ Error enabling 3D buildings:', error);
+    }
+  };
+
   // Step 2: Add crime data source
   const addCrimeDataSource = () => {
     if (!map.current) return;
@@ -551,87 +569,46 @@ export default function MapboxMap({ onRouteChange }: MapboxMapProps) {
   const addSimpleVisualization = () => {
     if (!map.current) return;
 
-    console.log('🔍 Step 3: Using exact source-layer name provided by user...');
+    console.log('🔍 Step 3: Adding data layers with correct 3D positioning...');
     
     try {
-      // Add heatmap layer first (so circles appear on top)
-      map.current.addLayer({
-        id: 'assault-heatmap-3312730771-3b869h',
-        type: 'heatmap',
-        source: 'crime-data',
-        'source-layer': 'Assault_Open_Data_-3312730771-3b869h',
-        filter: [
-          'match',
-          ['geometry-type'],
-          ['Point'],
-          true,
-          false
-        ],
-        paint: {
-          'heatmap-color': [
-            'step',
-            ['heatmap-density'],
-            'hsla(0, 0%, 0%, 0)',
-            0.05, 'hsla(60, 100%, 80%, 0.45)',
-            0.2, 'hsla(48, 100%, 67%, 0.5)',
-            0.3, 'hsla(35, 100%, 58%, 0.65)',
-            0.6, 'hsla(26, 100%, 50%, 0.8)',
-            0.99, 'hsla(8, 100%, 50%, 0.7)',
-            1, 'hsla(0, 100%, 45%, 0.8)'
-          ],
-          'heatmap-opacity': [
-            'interpolate',
-            ['linear'],
-            ['zoom'],
-            12, 0.7,
-            15.9, 0.55,
-            20, 0
-          ],
-          'heatmap-radius': [
-            'interpolate',
-            ['linear'],
-            ['zoom'],
-            10, 20,
-            14, 60,
-            17, 60,
-            18, 10
-          ],
-          'heatmap-intensity': [
-            'interpolate',
-            ['linear'],
-            ['zoom'],
-            11, 0.1,
-            12, 0.2,
-            14, 0.5
-          ]
-        }
-      });
+const layers = map.current.getStyle().layers;
+const firstFillExtrusionId = layers.find(layer => layer.type === 'fill-extrusion')?.id;
 
-      // Add circle layer on top of heatmap
-      map.current.addLayer({
-        id: 'assault-circles-3312730771-3b869h',
-        type: 'circle',
-        source: 'crime-data',
-        'source-layer': 'Assault_Open_Data_-3312730771-3b869h',
-        paint: {
-          'circle-color': 'hsl(0, 93%, 53%)',
-          'circle-blur': [
-            'interpolate',
-            ['linear'],
-            ['zoom'],
-            0, 100,
-            15.5, 0.5,
-            22, 0.1
-          ],
-          'circle-stroke-opacity': 0,
-          'circle-stroke-width': 10,
-          'circle-radius': 8,
-          'circle-stroke-color': 'hsl(269, 100%, 49%)'
-        },
-        layout: {}
-      });
+// Add heatmap layer below 3D buildings (so it's occluded)
+map.current.addLayer({
+  id: 'assault-heatmap-3312730771-3b869h',
+  type: 'heatmap',
+  source: 'crime-data',
+  'source-layer': 'Assault_Open_Data_-3312730771-3b869h',
+  filter: ['match', ['geometry-type'], ['Point'], true, false],
+  paint: {
+    'heatmap-color': ['step', ['heatmap-density'], 'hsla(0, 0%, 0%, 0)', 0.05, 'hsla(60, 100%, 80%, 0.45)', 0.2, 'hsla(48, 100%, 67%, 0.5)', 0.3, 'hsla(35, 100%, 58%, 0.65)', 0.6, 'hsla(26, 100%, 50%, 0.8)', 0.99, 'hsla(8, 100%, 50%, 0.7)', 1, 'hsla(0, 100%, 45%, 0.8)'],
+    'heatmap-opacity': ['interpolate', ['linear'], ['zoom'], 12, 0.7, 15.9, 0.55, 20, 0],
+    'heatmap-radius': ['interpolate', ['linear'], ['zoom'], 10, 20, 14, 60, 17, 60, 18, 10],
+    'heatmap-intensity': ['interpolate', ['linear'], ['zoom'], 11, 0.1, 12, 0.2, 14, 0.5]
+  }
+}, firstFillExtrusionId);
+
+map.current.addLayer({
+  id: 'assault-circles-3312730771-3b869h',
+  type: 'circle',
+  source: 'crime-data',
+  'source-layer': 'Assault_Open_Data_-3312730771-3b869h',
+  paint: {
+    'circle-color': 'hsl(0, 93%, 53%)',
+    'circle-blur': ['interpolate', ['linear'], ['zoom'], 0, 100, 15.5, 0.5, 22, 0.1],
+    'circle-stroke-opacity': 0,
+    'circle-stroke-width': 10,
+    'circle-radius': 8,
+    'circle-stroke-color': 'hsl(269, 100%, 49%)',
+    'circle-pitch-alignment': 'map'
+  },
+  layout: {}
+}, firstFillExtrusionId);
+
       
-      console.log('✅ Step 3 Complete: Heatmap + Circle layers added!');
+      console.log('✅ Step 3 Complete: Heatmap + Circle layers added with 3D occlusion!');
       
     } catch (error) {
       console.error('❌ Step 3 Failed with exact source-layer name:', error);
@@ -855,7 +832,7 @@ export default function MapboxMap({ onRouteChange }: MapboxMapProps) {
       {/* Crime Data Status */}
       {!isLoading && !mapError && (
         <div className="absolute bottom-4 left-4 bg-green-100 border border-green-400 text-green-700 px-3 py-2 rounded text-sm z-10">
-          ✅ Crime data + Point selection ready
+          ✅ 3D Buildings + Crime data + Point selection ready
         </div>
       )}
     </div>

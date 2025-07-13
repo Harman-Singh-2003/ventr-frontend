@@ -43,6 +43,32 @@ export interface RouteRequest {
   end_lat: number;
 }
 
+// New interfaces for the calculate-multiple API
+export interface CalculateMultipleRequest {
+  start: {
+    latitude: number;
+    longitude: number;
+  };
+  destination: {
+    latitude: number;
+    longitude: number;
+  };
+  include_shortest: boolean;
+  include_safest: boolean;
+  crime_weight_safest: number;
+  max_detour_factor: number;
+}
+
+export interface CalculateMultipleResponse {
+  success: boolean;
+  message: string;
+  shortest_route: any; // GeoJSON route data
+  shortest_stats: RouteStats;
+  safest_route: any; // GeoJSON route data
+  safest_stats: RouteStats;
+  comparison_stats: any; // Additional comparison data
+}
+
 export interface ApiRouteRequest {
   start: {
     latitude: number;
@@ -72,34 +98,99 @@ export interface ShortestRouteRequest {
 export interface ProcessedRoutes {
   shortest: RouteResponse;
   safe: RouteResponse;
+  comparison?: any; // Additional comparison data from the new API
 }
 
 class RoutingService {
   private baseUrl: string;
 
-  constructor(baseUrl: string = 'http://localhost:8001') { // User's API URL
+  constructor(baseUrl: string = 'http://localhost:8000') { // User's API URL
     this.baseUrl = baseUrl;
   }
 
   /**
-   * Calculate both shortest and safe routes
-   * Uses dedicated endpoints: /api/routing/shortest and /api/routing/calculate
+   * Calculate both shortest and safe routes using the new calculate-multiple endpoint
    */
   async calculateRoutes(request: RouteRequest): Promise<ProcessedRoutes> {
     console.log('🚗 Calculating routes for:', request);
 
     try {
-      // Make parallel API calls to different endpoints
-      const [shortestResponse, safeResponse] = await Promise.all([
-        this.calculateShortestRoute(request),  // /api/routing/shortest
-        this.calculateSafeRoute(request)       // /api/routing/calculate (crime-aware)
-      ]);
-
-      console.log('✅ Both routes calculated successfully from dedicated endpoints');
-      return {
-        shortest: shortestResponse,
-        safe: safeResponse
+      // Use the new calculate-multiple endpoint
+      const apiRequest: CalculateMultipleRequest = {
+        start: {
+          latitude: request.start_lat,
+          longitude: request.start_lng
+        },
+        destination: {
+          latitude: request.end_lat,
+          longitude: request.end_lng
+        },
+        include_shortest: true,
+        include_safest: true,
+        crime_weight_safest: 0.1,
+        max_detour_factor: 2
       };
+
+      console.log('📡 Calling calculate-multiple API with request:', apiRequest);
+      const response = await fetch(`${this.baseUrl}/api/routing/calculate-multiple`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(apiRequest)
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('❌ Calculate-multiple API failed:', response.status, errorText);
+        throw new Error(`Calculate-multiple API failed: ${response.status} - ${errorText}`);
+      }
+
+      const result: CalculateMultipleResponse = await response.json();
+      console.log('✅ Calculate-multiple response received:', result);
+
+      // Validate the response structure
+      if (!RoutingService.validateApiResponse(result)) {
+        throw new Error('Invalid API response structure');
+      }
+
+      if (!result.success) {
+        throw new Error(`API returned success: false - ${result.message}`);
+      }
+
+      if (!result.shortest_route || !result.safest_route) {
+        throw new Error('API response missing route data');
+      }
+
+      if (!result.shortest_stats || !result.safest_stats) {
+        throw new Error('API response missing stats data');
+      }
+
+      // Convert the response to the expected ProcessedRoutes format
+      const processedRoutes: ProcessedRoutes = {
+        shortest: {
+          success: result.success,
+          message: result.message,
+          route_geojson: result.shortest_route,
+          route_stats: result.shortest_stats,
+          shortest_path_stats: null
+        },
+        safe: {
+          success: result.success,
+          message: result.message,
+          route_geojson: result.safest_route,
+          route_stats: result.safest_stats,
+          shortest_path_stats: null
+        },
+        comparison: result.comparison_stats // Add comparison data
+      };
+
+      console.log('✅ Routes processed successfully from calculate-multiple endpoint');
+      console.log('📍 Shortest route stats:', processedRoutes.shortest.route_stats);
+      console.log('🛡️ Safe route stats:', processedRoutes.safe.route_stats);
+      
+      return processedRoutes;
+
     } catch (error) {
       console.error('❌ Error calculating routes:', error);
       
@@ -111,6 +202,7 @@ class RoutingService {
 
   /**
    * Calculate shortest route using dedicated shortest route endpoint
+   * @deprecated Use calculateRoutes instead which uses the new calculate-multiple endpoint
    */
   private async calculateShortestRoute(request: RouteRequest): Promise<RouteResponse> {
     console.log('📍 Calling dedicated shortest route API...');
@@ -147,6 +239,7 @@ class RoutingService {
 
   /**
    * Calculate safe route using crime-aware algorithm (prioritizes crime avoidance over distance)
+   * @deprecated Use calculateRoutes instead which uses the new calculate-multiple endpoint
    */
   private async calculateSafeRoute(request: RouteRequest): Promise<RouteResponse> {
     console.log('🛡️ Calling crime-aware API for safe route...');
@@ -392,6 +485,33 @@ class RoutingService {
    */
   static formatSafetyScore(score: number): string {
     return `${Math.round(score * 100)}% safer`;
+  }
+
+  /**
+   * Get comparison summary from the new API response
+   */
+  static getComparisonSummary(comparisonStats: any): string {
+    if (!comparisonStats) return 'No comparison data available';
+    
+    try {
+      // This method can be expanded based on what comparison_stats contains
+      return JSON.stringify(comparisonStats, null, 2);
+    } catch (error) {
+      return 'Error parsing comparison data';
+    }
+  }
+
+  /**
+   * Validate API response structure
+   */
+  static validateApiResponse(response: CalculateMultipleResponse): boolean {
+    return !!(
+      response.success &&
+      response.shortest_route &&
+      response.safest_route &&
+      response.shortest_stats &&
+      response.safest_stats
+    );
   }
 }
 
