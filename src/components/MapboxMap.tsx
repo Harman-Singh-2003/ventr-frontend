@@ -757,21 +757,19 @@ map.current.addLayer({
         />
       </div>
 
-      {/* Glassmorphic Sidebar - Floating on top */}
-      <div className="absolute top-0 left-0 z-10 h-full">
-        <Sidebar
-          startPoint={startPoint}
-          destinationPoint={destinationPoint}
-          startInputValue={startInputValue}
-          destinationInputValue={destinationInputValue}
-          routes={routes}
-          isLoadingRoutes={isLoadingRoutes}
-          routeError={routeError}
-          onLocationSelect={handleLocationSelect}
-          onInputChange={handleInputChange}
-          onClear={clearPoints}
-        />
-      </div>
+      {/* Sidebar - Mobile layout will be handled within the Sidebar component */}
+      <Sidebar
+        startPoint={startPoint}
+        destinationPoint={destinationPoint}
+        startInputValue={startInputValue}
+        destinationInputValue={destinationInputValue}
+        routes={routes}
+        isLoadingRoutes={isLoadingRoutes}
+        routeError={routeError}
+        onLocationSelect={handleLocationSelect}
+        onInputChange={handleInputChange}
+        onClear={clearPoints}
+      />
     </div>
   );
 } 

@@ -4,9 +4,10 @@ import { ExternalLink, Navigation } from 'lucide-react';
 interface OpenRouteInMapsButtonProps {
   geojson: any;
   routeType?: 'safe' | 'shortest';
+  isMobile?: boolean;
 }
 
-const OpenRouteInMapsButton = ({ geojson, routeType = 'safe' }: OpenRouteInMapsButtonProps) => {
+const OpenRouteInMapsButton = ({ geojson, routeType = 'safe', isMobile = false }: OpenRouteInMapsButtonProps) => {
   // Handle both GeoJSON Feature and FeatureCollection formats
   let coordinates: number[][] = [];
   
@@ -63,22 +64,29 @@ const OpenRouteInMapsButton = ({ geojson, routeType = 'safe' }: OpenRouteInMapsB
       href={googleMapsUrl}
       target="_blank"
       rel="noopener noreferrer"
-      className="
-        inline-flex items-center gap-3 px-6 py-3 
+      className={`
+        inline-flex items-center 
         bg-white/20 border border-white/30 
         text-slate-800 font-semibold hover:text-slate-900
-        rounded-xl hover:bg-white/30 transition-all duration-300
+        hover:bg-white/30 transition-all duration-300
         active:scale-95 group
-      "
+        ${isMobile 
+          ? 'gap-1 px-1.5 py-1.5 rounded-lg' 
+          : 'gap-3 px-6 py-3 rounded-xl'
+        }
+      `}
       title={`Open ${routeLabel} in Google Maps`}
     >
       <img 
         src="/Google_Maps_icon.png" 
         alt="Google Maps" 
-        className="w-5 h-5"
+        className={isMobile ? "w-4 h-4" : "w-5 h-5"}
       />
-      <Navigation className="w-5 h-5 text-slate-600 group-hover:text-slate-800 transition-colors" />
-      <ExternalLink className="w-5 h-5 text-slate-600 group-hover:text-slate-800 transition-colors" />
+      <ExternalLink 
+        className={`text-slate-600 group-hover:text-slate-800 transition-colors ${
+          isMobile ? "w-4 h-4" : "w-5 h-5"
+        }`} 
+      />
     </a>
   );
 };
