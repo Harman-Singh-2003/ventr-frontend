@@ -41,7 +41,7 @@ export default function Sidebar({
       {/* Mobile Layout */}
       <div className="md:hidden">
         {/* Mobile Header with Search - Fixed at top */}
-        <div className="absolute top-0 left-0 right-0 z-20 bg-white/15 backdrop-blur-xl border-b border-white/30 shadow-lg">
+        <div className="absolute top-0 left-0 right-0 z-20 bg-white/15 backdrop-blur-xl border-b border-white/30 shadow-lg max-h-70vh] overflow-y-auto sidebar-scroll">
           <div className="p-3">
             <div className="flex items-center space-x-2 mb-3">
               <div className="w-8 h-8 bg-gradient-to-r from-cyan-500 to-blue-600 rounded-lg flex items-center justify-center shadow-lg">

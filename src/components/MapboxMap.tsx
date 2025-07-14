@@ -40,8 +40,10 @@ export default function MapboxMap({ onRouteChange }: MapboxMapProps) {
   // New state for point selection and click popup
   const [startPoint, setStartPoint] = useState<LocationPoint | null>(null);
   const [destinationPoint, setDestinationPoint] = useState<LocationPoint | null>(null);
-  const [startMarker, setStartMarker] = useState<mapboxgl.Marker | null>(null);
-  const [destinationMarker, setDestinationMarker] = useState<mapboxgl.Marker | null>(null);
+  const startMarkerRef = useRef<mapboxgl.Marker | null>(null);
+  const destinationMarkerRef = useRef<mapboxgl.Marker | null>(null);
+  const startMarkerIdRef = useRef<string | undefined>(undefined);
+  const destinationMarkerIdRef = useRef<string | undefined>(undefined);
   const [clickPopup, setClickPopup] = useState<ClickPopup | null>(null);
   const clickPopupRef = useRef<mapboxgl.Popup | null>(null);
   
@@ -229,24 +231,21 @@ export default function MapboxMap({ onRouteChange }: MapboxMapProps) {
     });
   };
 
-  // Add start point marker with reverse geocoding
+  // Add start point marker (for search results)
   const addStartMarker = async (lng: number, lat: number) => {
     if (!map.current) return;
 
     // Remove existing start marker
-    if (startMarker) {
-      startMarker.remove();
+    if (startMarkerRef.current) {
+      startMarkerRef.current.remove();
+      startMarkerRef.current = null;
+      startMarkerIdRef.current = undefined;
     }
-
-    // Get address using reverse geocoding
-    const address = await reverseGeocode(lng, lat);
-    
-    // Update start point with address
-    setStartPoint(prev => prev ? { ...prev, address } : { lng, lat, address });
 
     // Create custom marker element for start point
     const el = document.createElement('div');
     el.className = 'start-marker';
+    el.id = `start-marker-search-${Date.now()}`;
     el.style.cssText = `
       background-color: #22c55e;
       width: 20px;
@@ -259,41 +258,28 @@ export default function MapboxMap({ onRouteChange }: MapboxMapProps) {
 
     const marker = new mapboxgl.Marker(el)
       .setLngLat([lng, lat])
-      .setPopup(new mapboxgl.Popup().setHTML(`
-        <div class="p-3 max-w-xs">
-          <h3 class="font-bold text-green-600 mb-2">🟢 Start Point</h3>
-          <p class="text-sm text-gray-700 mb-1"><strong>Address:</strong></p>
-          <p class="text-sm text-gray-600 mb-2">${address}</p>
-          <p class="text-xs text-gray-500">
-            <strong>Coordinates:</strong><br/>
-            Lng: ${lng.toFixed(6)}<br/>
-            Lat: ${lat.toFixed(6)}
-          </p>
-        </div>
-      `))
       .addTo(map.current);
 
-    setStartMarker(marker);
+    startMarkerRef.current = marker;
+    startMarkerIdRef.current = el.id;
   };
 
-  // Add destination point marker with reverse geocoding
+  // Add destination point marker (for search results)
   const addDestinationMarker = async (lng: number, lat: number) => {
     if (!map.current) return;
 
     // Remove existing destination marker
-    if (destinationMarker) {
-      destinationMarker.remove();
+    if (destinationMarkerRef.current) {
+      console.log(`🗑️ [SEARCH] Removing existing destination marker`);
+      destinationMarkerRef.current.remove();
+      destinationMarkerRef.current = null;
+      destinationMarkerIdRef.current = undefined;
     }
-
-    // Get address using reverse geocoding
-    const address = await reverseGeocode(lng, lat);
-    
-    // Update destination point with address
-    setDestinationPoint(prev => prev ? { ...prev, address } : { lng, lat, address });
 
     // Create custom marker element for destination point
     const el = document.createElement('div');
     el.className = 'destination-marker';
+    el.id = `destination-marker-search-${Date.now()}`;
     el.style.cssText = `
       background-color: #ef4444;
       width: 20px;
@@ -306,32 +292,23 @@ export default function MapboxMap({ onRouteChange }: MapboxMapProps) {
 
     const marker = new mapboxgl.Marker(el)
       .setLngLat([lng, lat])
-      .setPopup(new mapboxgl.Popup().setHTML(`
-        <div class="p-3 max-w-xs">
-          <h3 class="font-bold text-red-600 mb-2">🔴 Destination</h3>
-          <p class="text-sm text-gray-700 mb-1"><strong>Address:</strong></p>
-          <p class="text-sm text-gray-600 mb-2">${address}</p>
-          <p class="text-xs text-gray-500">
-            <strong>Coordinates:</strong><br/>
-            Lng: ${lng.toFixed(6)}<br/>
-            Lat: ${lat.toFixed(6)}
-          </p>
-        </div>
-      `))
       .addTo(map.current);
 
-    setDestinationMarker(marker);
+    destinationMarkerRef.current = marker;
+    destinationMarkerIdRef.current = el.id;
   };
 
   // Clear all markers and points
   const clearPoints = () => {
-    if (startMarker) {
-      startMarker.remove();
-      setStartMarker(null);
+    if (startMarkerRef.current) {
+      startMarkerRef.current.remove();
+      startMarkerRef.current = null;
+      startMarkerIdRef.current = undefined;
     }
-    if (destinationMarker) {
-      destinationMarker.remove();
-      setDestinationMarker(null);
+    if (destinationMarkerRef.current) {
+      destinationMarkerRef.current.remove();
+      destinationMarkerRef.current = null;
+      destinationMarkerIdRef.current = undefined;
     }
     if (clickPopupRef.current) {
       clickPopupRef.current.remove();
@@ -346,28 +323,79 @@ export default function MapboxMap({ onRouteChange }: MapboxMapProps) {
 
   // Handle setting a location from click popup
   const handleSetLocation = async (lng: number, lat: number, type: 'start' | 'destination') => {
-    console.log(`📍 Setting ${type} location:`, { lng, lat });
-    
     // Get address using reverse geocoding
     const address = await reverseGeocode(lng, lat);
     
     if (type === 'start') {
+      // Remove existing start marker first
+      if (startMarkerRef.current) {
+        startMarkerRef.current.remove();
+        startMarkerRef.current = null;
+        startMarkerIdRef.current = undefined;
+      }
+      
+      // Update state
       setStartPoint({ lng, lat, address });
       setStartInputValue(address);
-      await addStartMarker(lng, lat);
+      
+      // Create and add new start marker
+      console.log(`🟢 Creating new start marker at:`, { lng, lat });
+      const el = document.createElement('div');
+      el.className = 'start-marker';
+      el.id = `start-marker-${Date.now()}`;
+      el.style.cssText = `
+        background-color: #22c55e;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        border: 3px solid white;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+        cursor: pointer;
+      `;
+
+      const marker = new mapboxgl.Marker(el)
+        .setLngLat([lng, lat])
+        .addTo(map.current!);
+
+      startMarkerRef.current = marker;
+      startMarkerIdRef.current = el.id;
     } else {
+      // Remove existing destination marker first
+      if (destinationMarkerRef.current) {
+        destinationMarkerRef.current.remove();
+        destinationMarkerRef.current = null;
+        destinationMarkerIdRef.current = undefined;
+      }
+      
+      // Update state
       setDestinationPoint({ lng, lat, address });
       setDestinationInputValue(address);
-      await addDestinationMarker(lng, lat);
-    }
+      
+      // Create and add new destination marker
+      const el = document.createElement('div');
+      el.className = 'destination-marker';
+      el.id = `destination-marker-${Date.now()}`;
+      el.style.cssText = `
+        background-color: #ef4444;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        border: 3px solid white;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+        cursor: pointer;
+      `;
 
-    // Popup is now handled by Mapbox and will be closed by the click handler
+      const marker = new mapboxgl.Marker(el)
+        .setLngLat([lng, lat])
+        .addTo(map.current!);
+
+      destinationMarkerRef.current = marker;
+      destinationMarkerIdRef.current = el.id;
+    }
   };
 
   // Handle location selection from search
   const handleLocationSelect = async (location: { lng: number; lat: number; address: string }, type: 'start' | 'destination') => {
-    console.log(`🔍 Search result selected for ${type}:`, location);
-    
     if (type === 'start') {
       setStartPoint(location);
       setStartInputValue(location.address);
@@ -565,7 +593,7 @@ export default function MapboxMap({ onRouteChange }: MapboxMapProps) {
         allCoordinates.forEach(coord => bounds.extend(coord as [number, number]));
         const isMobile = window.innerWidth <= 768; // Adjust based on your breakpoint  
         // Use larger padding for mobile to avoid clipping
-        const padding = isMobile ? 100 : 300; // Adjust padding based on device
+        const padding = isMobile ? 150 : 100; // Adjust padding based on device
         
         map.current.fitBounds(bounds, {
           padding: padding,
