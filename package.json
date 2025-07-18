@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@cloudflare/kv-asset-handler": "^0.4.0",
     "@mapbox/mapbox-gl-geocoder": "^5.0.3",
     "lucide-react": "^0.525.0",
     "mapbox-gl": "^3.13.0",
