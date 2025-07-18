@@ -3,4 +3,4 @@ main = "worker.js"
 compatibility_date = "2025-07-18"
 
 [site]
-bucket = ".next/out"
+bucket = "out"
