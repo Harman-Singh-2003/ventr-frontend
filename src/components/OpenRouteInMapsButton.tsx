@@ -1,7 +1,9 @@
 import React from 'react';
-import { ExternalLink, Navigation } from 'lucide-react';
+import Image from 'next/image';
+import { ExternalLink } from 'lucide-react';
 
 interface OpenRouteInMapsButtonProps {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   geojson: any;
   routeType?: 'safe' | 'shortest';
 }
@@ -15,6 +17,7 @@ const OpenRouteInMapsButton = ({ geojson, routeType = 'safe' }: OpenRouteInMapsB
   } else if (geojson?.type === 'FeatureCollection' && geojson?.features?.length > 0) {
     // Find the first LineString feature
     const lineStringFeature = geojson.features.find(
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (feature: any) => feature.geometry?.type === 'LineString'
     );
     if (lineStringFeature) {
@@ -75,9 +78,11 @@ const OpenRouteInMapsButton = ({ geojson, routeType = 'safe' }: OpenRouteInMapsB
       "
       title={`Open ${routeLabel} in Google Maps`}
     >
-      <img 
+      <Image 
         src="/Google_Maps_icon.png" 
         alt="Google Maps" 
+        width={24}
+        height={24}
         className="w-6 h-6 md:w-5 md:h-5"
       />
       <ExternalLink className="w-6 h-6 md:w-5 md:h-5 text-slate-600 group-hover:text-slate-800 transition-colors hidden md:block" />

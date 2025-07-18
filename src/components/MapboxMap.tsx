@@ -4,19 +4,12 @@ import React, { useRef, useEffect, useState, useCallback } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import ReactDOMServer from 'react-dom/server';
-import SearchBox from './SearchBox';
 import ClickPopup from './ClickPopup';
-import OpenRouteInMapsButton from './OpenRouteInMapsButton';
 import Sidebar from './Sidebar';
-import { routingService, ProcessedRoutes, RouteResponse } from '../services/routingService';
-import RoutingService from '../services/routingService';
+import { routingService, ProcessedRoutes } from '../services/routingService';
 
 // Set the access token
 mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN || '';
-
-interface MapboxMapProps {
-  onRouteChange?: (routeData: any) => void;
-}
 
 interface LocationPoint {
   lng: number;
@@ -49,7 +42,7 @@ function getDistanceKm(lat1: number, lng1: number, lat2: number, lng2: number) {
   return R * c;
 }
 
-export default function MapboxMap({ onRouteChange }: MapboxMapProps) {
+export default function MapboxMap() {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -62,7 +55,6 @@ export default function MapboxMap({ onRouteChange }: MapboxMapProps) {
   const destinationMarkerRef = useRef<mapboxgl.Marker | null>(null);
   const startMarkerIdRef = useRef<string | undefined>(undefined);
   const destinationMarkerIdRef = useRef<string | undefined>(undefined);
-  const [clickPopup, setClickPopup] = useState<ClickPopup | null>(null);
   const clickPopupRef = useRef<mapboxgl.Popup | null>(null);
   
   // Input field values for the search box
@@ -147,6 +139,7 @@ export default function MapboxMap({ onRouteChange }: MapboxMapProps) {
         map.current = null;
       }
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Add click handler for location popup
@@ -199,7 +192,9 @@ export default function MapboxMap({ onRouteChange }: MapboxMapProps) {
           popupElement.classList.add('mapboxgl-popup-anchor-bottom');
           
           // Override the popup's update method to prevent repositioning
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const originalUpdate = (popup as any)._update;
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           (popup as any)._update = function() {
             originalUpdate.call(this);
             // Restore bottom anchor after any update
@@ -338,7 +333,6 @@ export default function MapboxMap({ onRouteChange }: MapboxMapProps) {
     }
     setStartPoint(null);
     setDestinationPoint(null);
-    setClickPopup(null);
     setStartInputValue('');
     setDestinationInputValue('');
   };
@@ -515,6 +509,7 @@ export default function MapboxMap({ onRouteChange }: MapboxMapProps) {
         setIsLoadingRoutes(false);
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [startPoint, destinationPoint]);
 
     // Add route layers to the map
@@ -616,6 +611,7 @@ export default function MapboxMap({ onRouteChange }: MapboxMapProps) {
       
       if (routeData.shortest.route_geojson && 'features' in routeData.shortest.route_geojson) {
         const shortestFeatures = routeData.shortest.route_geojson.features;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         shortestFeatures.forEach((feature: any) => {
           if (feature.geometry.type === 'LineString') {
             allCoordinates.push(...feature.geometry.coordinates);
@@ -625,6 +621,7 @@ export default function MapboxMap({ onRouteChange }: MapboxMapProps) {
       
       if (routeData.safe.route_geojson && 'features' in routeData.safe.route_geojson) {
         const safeFeatures = routeData.safe.route_geojson.features;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         safeFeatures.forEach((feature: any) => {
           if (feature.geometry.type === 'LineString') {
             allCoordinates.push(...feature.geometry.coordinates);
@@ -788,20 +785,6 @@ map.current.addLayer({
     } catch (error) {
       console.error('Reverse geocoding error:', error);
       return `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
-    }
-  };
-
-  // Forward geocoding function using Mapbox Search Box API
-  const forwardGeocode = async (query: string) => {
-    try {
-      const response = await fetch(
-        `https://api.mapbox.com/search/searchbox/v1/forward?q=${encodeURIComponent(query)}&access_token=${mapboxgl.accessToken}&session_token=${Date.now()}`
-      );
-      const data = await response.json();
-      return data;
-    } catch (error) {
-      console.error('Forward geocoding error:', error);
-      return null;
     }
   };
 

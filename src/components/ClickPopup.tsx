@@ -18,13 +18,20 @@ interface ClickPopupProps {
 export default function ClickPopup({
   lng,
   lat,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   x,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars  
   y,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   onSetLocation,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   onClose,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   isMapboxPopup = false,
 }: ClickPopupProps) {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const popupOffset = 16; // How many px above the click you want the popup to appear (adjust as needed)
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const pulseSize = 36;
 
   // If this is for a Mapbox popup, render simplified content without positioning
