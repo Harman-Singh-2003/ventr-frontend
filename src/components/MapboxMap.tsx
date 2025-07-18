@@ -3,16 +3,13 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
-import SearchBox from './SearchBox';
-import { routingService, ProcessedRoutes, RouteResponse } from '../services/routingService';
-import RoutingService from '../services/routingService';
+import ReactDOMServer from 'react-dom/server';
+import ClickPopup from './ClickPopup';
+import Sidebar from './Sidebar';
+import { routingService, ProcessedRoutes } from '../services/routingService';
 
 // Set the access token
 mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN || '';
-
-interface MapboxMapProps {
-  onRouteChange?: (routeData: any) => void;
-}
 
 interface LocationPoint {
   lng: number;
@@ -27,7 +24,25 @@ interface ClickPopup {
   y: number;
 }
 
-export default function MapboxMap({ onRouteChange }: MapboxMapProps) {
+// Toronto center for validation
+const TORONTO_CENTER = { lat: 43.6532, lng: -79.3832 };
+const MAX_DISTANCE_KM = 30;
+
+// Haversine formula to calculate distance between two lat/lng points in km
+function getDistanceKm(lat1: number, lng1: number, lat2: number, lng2: number) {
+  const toRad = (x: number) => (x * Math.PI) / 180;
+  const R = 6371; // Earth radius in km
+  const dLat = toRad(lat2 - lat1);
+  const dLng = toRad(lng2 - lng1);
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
+    Math.sin(dLng / 2) * Math.sin(dLng / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+}
+
+export default function MapboxMap() {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -36,9 +51,11 @@ export default function MapboxMap({ onRouteChange }: MapboxMapProps) {
   // New state for point selection and click popup
   const [startPoint, setStartPoint] = useState<LocationPoint | null>(null);
   const [destinationPoint, setDestinationPoint] = useState<LocationPoint | null>(null);
-  const [startMarker, setStartMarker] = useState<mapboxgl.Marker | null>(null);
-  const [destinationMarker, setDestinationMarker] = useState<mapboxgl.Marker | null>(null);
-  const [clickPopup, setClickPopup] = useState<ClickPopup | null>(null);
+  const startMarkerRef = useRef<mapboxgl.Marker | null>(null);
+  const destinationMarkerRef = useRef<mapboxgl.Marker | null>(null);
+  const startMarkerIdRef = useRef<string | undefined>(undefined);
+  const destinationMarkerIdRef = useRef<string | undefined>(undefined);
+  const clickPopupRef = useRef<mapboxgl.Popup | null>(null);
   
   // Input field values for the search box
   const [startInputValue, setStartInputValue] = useState('');
@@ -51,6 +68,10 @@ export default function MapboxMap({ onRouteChange }: MapboxMapProps) {
   
   // Use ref to track the latest calculation to handle race conditions
   const latestCalculationId = useRef<number>(0);
+
+  // Popup for out-of-bounds selection
+  const [popupMessage, setPopupMessage] = useState<string | null>(null);
+  const popupTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     // Check if we have a token
@@ -109,11 +130,16 @@ export default function MapboxMap({ onRouteChange }: MapboxMapProps) {
 
     // Cleanup function
     return () => {
+      if (clickPopupRef.current) {
+        clickPopupRef.current.remove();
+        clickPopupRef.current = null;
+      }
       if (map.current) {
         map.current.remove();
         map.current = null;
       }
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Add click handler for location popup
@@ -122,38 +148,121 @@ export default function MapboxMap({ onRouteChange }: MapboxMapProps) {
 
     map.current.on('click', async (e) => {
       const { lng, lat } = e.lngLat;
-      const { x, y } = e.point;
       
-      console.log(`📍 Map clicked at:`, { lng, lat, x, y });
+      console.log(`📍 Map clicked at:`, { lng, lat });
 
-      // Show click popup with coordinates
-      setClickPopup({
-        lng,
-        lat,
-        x,
-        y
+      // Close existing popup if any
+      if (clickPopupRef.current) {
+        clickPopupRef.current.remove();
+      }
+
+      // Create React component content as HTML string
+      const popupContent = ReactDOMServer.renderToString(
+        <ClickPopup
+          lng={lng}
+          lat={lat}
+          x={0} // Not needed for Mapbox popup
+          y={0} // Not needed for Mapbox popup
+          onSetLocation={handleSetLocation}
+          onClose={() => {}} // Will be handled by popup close event
+          isMapboxPopup={true}
+        />
+      );
+
+      // Create Mapbox popup with fixed positioning
+      const popup = new mapboxgl.Popup({
+        closeButton: false, // We'll use our custom close button
+        closeOnClick: false,
+        maxWidth: '300px',
+        offset: [0, -15],
+        anchor: 'bottom', // Force anchor to bottom
+        focusAfterOpen: false,
+        className: 'click-popup'
+      })
+        .setLngLat([lng, lat])
+        .setHTML(`<div id="popup-content">${popupContent}</div>`)
+        .addTo(map.current!);
+
+      // Override Mapbox's automatic repositioning by locking the anchor
+      setTimeout(() => {
+        const popupElement = popup.getElement();
+        if (popupElement) {
+          // Force the popup to maintain bottom anchor
+          popupElement.className = popupElement.className.replace(/mapboxgl-popup-anchor-\w+/g, '');
+          popupElement.classList.add('mapboxgl-popup-anchor-bottom');
+          
+          // Override the popup's update method to prevent repositioning
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const originalUpdate = (popup as any)._update;
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          (popup as any)._update = function() {
+            originalUpdate.call(this);
+            // Restore bottom anchor after any update
+            const element = this.getElement();
+            if (element) {
+              element.className = element.className.replace(/mapboxgl-popup-anchor-\w+/g, '');
+              element.classList.add('mapboxgl-popup-anchor-bottom');
+            }
+          };
+        }
+      }, 0);
+
+      // Store popup reference
+      clickPopupRef.current = popup;
+
+      // Add event listeners to the popup content after it's added to DOM
+      setTimeout(() => {
+        const popupElement = document.getElementById('popup-content');
+        if (popupElement) {
+          // Add click handlers for start/destination buttons
+          const startBtn = popupElement.querySelector('[data-action="start"]');
+          const destBtn = popupElement.querySelector('[data-action="destination"]');
+          const closeBtn = popupElement.querySelector('[data-action="close"]');
+
+          if (startBtn) {
+            startBtn.addEventListener('click', () => {
+              handleSetLocation(lng, lat, 'start');
+              popup.remove();
+            });
+          }
+
+          if (destBtn) {
+            destBtn.addEventListener('click', () => {
+              handleSetLocation(lng, lat, 'destination');
+              popup.remove();
+            });
+          }
+
+          if (closeBtn) {
+            closeBtn.addEventListener('click', () => {
+              popup.remove();
+            });
+          }
+        }
+      }, 0);
+
+      // Handle popup close event
+      popup.on('close', () => {
+        clickPopupRef.current = null;
       });
     });
   };
 
-  // Add start point marker with reverse geocoding
+  // Add start point marker (for search results)
   const addStartMarker = async (lng: number, lat: number) => {
     if (!map.current) return;
 
     // Remove existing start marker
-    if (startMarker) {
-      startMarker.remove();
+    if (startMarkerRef.current) {
+      startMarkerRef.current.remove();
+      startMarkerRef.current = null;
+      startMarkerIdRef.current = undefined;
     }
-
-    // Get address using reverse geocoding
-    const address = await reverseGeocode(lng, lat);
-    
-    // Update start point with address
-    setStartPoint(prev => prev ? { ...prev, address } : { lng, lat, address });
 
     // Create custom marker element for start point
     const el = document.createElement('div');
     el.className = 'start-marker';
+    el.id = `start-marker-search-${Date.now()}`;
     el.style.cssText = `
       background-color: #22c55e;
       width: 20px;
@@ -166,41 +275,28 @@ export default function MapboxMap({ onRouteChange }: MapboxMapProps) {
 
     const marker = new mapboxgl.Marker(el)
       .setLngLat([lng, lat])
-      .setPopup(new mapboxgl.Popup().setHTML(`
-        <div class="p-3 max-w-xs">
-          <h3 class="font-bold text-green-600 mb-2">🟢 Start Point</h3>
-          <p class="text-sm text-gray-700 mb-1"><strong>Address:</strong></p>
-          <p class="text-sm text-gray-600 mb-2">${address}</p>
-          <p class="text-xs text-gray-500">
-            <strong>Coordinates:</strong><br/>
-            Lng: ${lng.toFixed(6)}<br/>
-            Lat: ${lat.toFixed(6)}
-          </p>
-        </div>
-      `))
       .addTo(map.current);
 
-    setStartMarker(marker);
+    startMarkerRef.current = marker;
+    startMarkerIdRef.current = el.id;
   };
 
-  // Add destination point marker with reverse geocoding
+  // Add destination point marker (for search results)
   const addDestinationMarker = async (lng: number, lat: number) => {
     if (!map.current) return;
 
     // Remove existing destination marker
-    if (destinationMarker) {
-      destinationMarker.remove();
+    if (destinationMarkerRef.current) {
+      console.log(`🗑️ [SEARCH] Removing existing destination marker`);
+      destinationMarkerRef.current.remove();
+      destinationMarkerRef.current = null;
+      destinationMarkerIdRef.current = undefined;
     }
-
-    // Get address using reverse geocoding
-    const address = await reverseGeocode(lng, lat);
-    
-    // Update destination point with address
-    setDestinationPoint(prev => prev ? { ...prev, address } : { lng, lat, address });
 
     // Create custom marker element for destination point
     const el = document.createElement('div');
     el.className = 'destination-marker';
+    el.id = `destination-marker-search-${Date.now()}`;
     el.style.cssText = `
       background-color: #ef4444;
       width: 20px;
@@ -213,65 +309,131 @@ export default function MapboxMap({ onRouteChange }: MapboxMapProps) {
 
     const marker = new mapboxgl.Marker(el)
       .setLngLat([lng, lat])
-      .setPopup(new mapboxgl.Popup().setHTML(`
-        <div class="p-3 max-w-xs">
-          <h3 class="font-bold text-red-600 mb-2">🔴 Destination</h3>
-          <p class="text-sm text-gray-700 mb-1"><strong>Address:</strong></p>
-          <p class="text-sm text-gray-600 mb-2">${address}</p>
-          <p class="text-xs text-gray-500">
-            <strong>Coordinates:</strong><br/>
-            Lng: ${lng.toFixed(6)}<br/>
-            Lat: ${lat.toFixed(6)}
-          </p>
-        </div>
-      `))
       .addTo(map.current);
 
-    setDestinationMarker(marker);
+    destinationMarkerRef.current = marker;
+    destinationMarkerIdRef.current = el.id;
   };
 
   // Clear all markers and points
   const clearPoints = () => {
-    if (startMarker) {
-      startMarker.remove();
-      setStartMarker(null);
+    if (startMarkerRef.current) {
+      startMarkerRef.current.remove();
+      startMarkerRef.current = null;
+      startMarkerIdRef.current = undefined;
     }
-    if (destinationMarker) {
-      destinationMarker.remove();
-      setDestinationMarker(null);
+    if (destinationMarkerRef.current) {
+      destinationMarkerRef.current.remove();
+      destinationMarkerRef.current = null;
+      destinationMarkerIdRef.current = undefined;
+    }
+    if (clickPopupRef.current) {
+      clickPopupRef.current.remove();
+      clickPopupRef.current = null;
     }
     setStartPoint(null);
     setDestinationPoint(null);
-    setClickPopup(null);
     setStartInputValue('');
     setDestinationInputValue('');
   };
 
   // Handle setting a location from click popup
   const handleSetLocation = async (lng: number, lat: number, type: 'start' | 'destination') => {
-    console.log(`📍 Setting ${type} location:`, { lng, lat });
-    
+    // Check if within 30km of Toronto center
+    const dist = getDistanceKm(lat, lng, TORONTO_CENTER.lat, TORONTO_CENTER.lng);
+    console.log(`[DEBUG] handleSetLocation: lat=${lat}, lng=${lng}, dist=${dist}`);
+    if (dist > MAX_DISTANCE_KM) {
+      setPopupMessage('Select locations within Toronto');
+      if (popupTimeoutRef.current) clearTimeout(popupTimeoutRef.current);
+      popupTimeoutRef.current = setTimeout(() => setPopupMessage(null), 2000);
+      if (type === 'start') setStartInputValue('');
+      else setDestinationInputValue('');
+      return;
+    }
     // Get address using reverse geocoding
     const address = await reverseGeocode(lng, lat);
     
     if (type === 'start') {
+      // Remove existing start marker first
+      if (startMarkerRef.current) {
+        startMarkerRef.current.remove();
+        startMarkerRef.current = null;
+        startMarkerIdRef.current = undefined;
+      }
+      
+      // Update state
       setStartPoint({ lng, lat, address });
       setStartInputValue(address);
-      await addStartMarker(lng, lat);
+      
+      // Create and add new start marker
+      console.log(`🟢 Creating new start marker at:`, { lng, lat });
+      const el = document.createElement('div');
+      el.className = 'start-marker';
+      el.id = `start-marker-${Date.now()}`;
+      el.style.cssText = `
+        background-color: #22c55e;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        border: 3px solid white;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+        cursor: pointer;
+      `;
+
+      const marker = new mapboxgl.Marker(el)
+        .setLngLat([lng, lat])
+        .addTo(map.current!);
+
+      startMarkerRef.current = marker;
+      startMarkerIdRef.current = el.id;
     } else {
+      // Remove existing destination marker first
+      if (destinationMarkerRef.current) {
+        destinationMarkerRef.current.remove();
+        destinationMarkerRef.current = null;
+        destinationMarkerIdRef.current = undefined;
+      }
+      
+      // Update state
       setDestinationPoint({ lng, lat, address });
       setDestinationInputValue(address);
-      await addDestinationMarker(lng, lat);
-    }
+      
+      // Create and add new destination marker
+      const el = document.createElement('div');
+      el.className = 'destination-marker';
+      el.id = `destination-marker-${Date.now()}`;
+      el.style.cssText = `
+        background-color: #ef4444;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        border: 3px solid white;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+        cursor: pointer;
+      `;
 
-    // Hide popup after selection
-    setClickPopup(null);
+      const marker = new mapboxgl.Marker(el)
+        .setLngLat([lng, lat])
+        .addTo(map.current!);
+
+      destinationMarkerRef.current = marker;
+      destinationMarkerIdRef.current = el.id;
+    }
   };
 
   // Handle location selection from search
   const handleLocationSelect = async (location: { lng: number; lat: number; address: string }, type: 'start' | 'destination') => {
-    console.log(`🔍 Search result selected for ${type}:`, location);
-    
+    // Check if within 30km of Toronto center
+    const dist = getDistanceKm(location.lat, location.lng, TORONTO_CENTER.lat, TORONTO_CENTER.lng);
+    console.log(`[DEBUG] handleLocationSelect: lat=${location.lat}, lng=${location.lng}, dist=${dist}`);
+    if (dist > MAX_DISTANCE_KM) {
+      setPopupMessage('Select locations within Toronto');
+      if (popupTimeoutRef.current) clearTimeout(popupTimeoutRef.current);
+      popupTimeoutRef.current = setTimeout(() => setPopupMessage(null), 2000);
+      if (type === 'start') setStartInputValue('');
+      else setDestinationInputValue('');
+      return;
+    }
     if (type === 'start') {
       setStartPoint(location);
       setStartInputValue(location.address);
@@ -347,6 +509,7 @@ export default function MapboxMap({ onRouteChange }: MapboxMapProps) {
         setIsLoadingRoutes(false);
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [startPoint, destinationPoint]);
 
     // Add route layers to the map
@@ -448,6 +611,7 @@ export default function MapboxMap({ onRouteChange }: MapboxMapProps) {
       
       if (routeData.shortest.route_geojson && 'features' in routeData.shortest.route_geojson) {
         const shortestFeatures = routeData.shortest.route_geojson.features;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         shortestFeatures.forEach((feature: any) => {
           if (feature.geometry.type === 'LineString') {
             allCoordinates.push(...feature.geometry.coordinates);
@@ -457,6 +621,7 @@ export default function MapboxMap({ onRouteChange }: MapboxMapProps) {
       
       if (routeData.safe.route_geojson && 'features' in routeData.safe.route_geojson) {
         const safeFeatures = routeData.safe.route_geojson.features;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         safeFeatures.forEach((feature: any) => {
           if (feature.geometry.type === 'LineString') {
             allCoordinates.push(...feature.geometry.coordinates);
@@ -467,9 +632,12 @@ export default function MapboxMap({ onRouteChange }: MapboxMapProps) {
       if (allCoordinates.length > 0) {
         const bounds = new mapboxgl.LngLatBounds();
         allCoordinates.forEach(coord => bounds.extend(coord as [number, number]));
+        const isMobile = window.innerWidth <= 768; // Adjust based on your breakpoint  
+        // Use larger padding for mobile to avoid clipping
+        const padding = isMobile ? 150 : 100; // Adjust padding based on device
         
         map.current.fitBounds(bounds, {
-          padding: 100,
+          padding: padding,
           duration: 2000
         });
       }
@@ -506,27 +674,13 @@ export default function MapboxMap({ onRouteChange }: MapboxMapProps) {
     });
   };
 
-  // Effect to calculate routes when both points are available (with debouncing)
+  // Only clear routes if points are missing
   useEffect(() => {
-    if (startPoint && destinationPoint) {
-      console.log('⏰ Route calculation requested, debouncing...');
-      
-      // Debounce route calculation to prevent multiple rapid API calls
-      const timeoutId = setTimeout(() => {
-        calculateRoutes();
-      }, 300); // 300ms debounce
-
-      return () => {
-        console.log('🚫 Cancelling previous route calculation timeout');
-        clearTimeout(timeoutId);
-      };
-    } else {
-      // Clear routes if points are missing
-      console.log('🧹 Clearing routes - missing start or destination point');
+    if (!(startPoint && destinationPoint)) {
       setRoutes(null);
       removeRoutesFromMap();
     }
-  }, [startPoint, destinationPoint, calculateRoutes]);
+  }, [startPoint, destinationPoint]);
 
   const add3DBuildings = () => {
     if (!map.current) return;
@@ -634,207 +788,64 @@ map.current.addLayer({
     }
   };
 
-  // Forward geocoding function using Mapbox Search Box API
-  const forwardGeocode = async (query: string) => {
-    try {
-      const response = await fetch(
-        `https://api.mapbox.com/search/searchbox/v1/forward?q=${encodeURIComponent(query)}&access_token=${mapboxgl.accessToken}&session_token=${Date.now()}`
-      );
-      const data = await response.json();
-      return data;
-    } catch (error) {
-      console.error('Forward geocoding error:', error);
-      return null;
-    }
-  };
-
   return (
     <div className="w-full h-full relative">
-      {/* Loading State */}
-      {isLoading && (
-        <div className="absolute inset-0 bg-gray-100 flex items-center justify-center z-50">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
-            <p className="text-gray-600">Step 1: Loading basic map...</p>
-          </div>
+      {/* Out-of-bounds popup */}
+      {popupMessage && (
+        <div className="fixed top-8 left-1/2 z-50 -translate-x-1/2 bg-red-500 text-white px-6 py-3 rounded-xl shadow-lg text-base font-semibold animate-fade-in-out pointer-events-none">
+          {popupMessage}
         </div>
       )}
-
-      {/* Error State */}
-      {mapError && (
-        <div className="absolute inset-0 bg-red-50 flex items-center justify-center z-50 p-4">
-          <div className="text-center max-w-md">
-            <div className="text-red-500 text-xl mb-4">⚠️</div>
-            <h3 className="text-lg font-semibold text-red-800 mb-2">Map Error</h3>
-            <p className="text-red-600 text-sm mb-4">{mapError}</p>
-            <div className="text-xs text-gray-600 bg-white p-3 rounded border">
-              <p><strong>Quick Fix:</strong></p>
-              <p>1. Get a free token at <a href="https://account.mapbox.com" target="_blank" className="text-blue-600 underline">mapbox.com</a></p>
-              <p>2. Add it to your .env.local file</p>
-              <p>3. Restart the dev server</p>
+      {/* Map Section - Full width background */}
+      <div className="absolute inset-0">
+        {/* Loading State */}
+        {isLoading && (
+          <div className="absolute inset-0 bg-gray-100 flex items-center justify-center z-50">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+              <p className="text-gray-600">Loading map...</p>
             </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* Modern Search Interface */}
-      {!isLoading && !mapError && (
-        <div className="absolute top-6 left-6 z-20 max-w-md w-full">
-          <SearchBox 
-            onLocationSelect={handleLocationSelect}
-            placeholder="Type an address or place..."
-            startValue={startInputValue}
-            destinationValue={destinationInputValue}
-            onInputChange={handleInputChange}
-            onClear={clearPoints}
-          />
-          
-          {/* Route Information Panel - show loading, error, or route details */}
-          {startPoint && destinationPoint && (
-            <div className="mt-2 bg-white rounded-lg shadow-lg border border-gray-100 p-3">
-              <h3 className="text-sm font-medium text-gray-700 mb-2">Route Information</h3>
-              
-              {/* Loading state */}
-              {isLoadingRoutes && (
-                <div className="flex items-center space-x-2 text-sm text-blue-600">
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
-                  <span>Calculating routes...</span>
-                </div>
-              )}
-
-              {/* Error state */}
-              {routeError && (
-                <div className="text-sm text-red-600 bg-red-50 p-2 rounded">
-                  ⚠️ {routeError}
-                </div>
-              )}
-
-              {/* Route details */}
-              {routes && !isLoadingRoutes && !routeError && (
-                <div className="space-y-3">
-                  {/* Shortest Route */}
-                  <div className="bg-blue-50 p-2 rounded border-l-4 border-blue-500">
-                    <div className="flex items-center space-x-2 mb-1">
-                      <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
-                      <span className="text-sm font-medium text-blue-800">Shortest Route</span>
-                    </div>
-                    <div className="text-xs text-blue-700 space-y-1">
-                      <div>Distance: {RoutingService.formatDistance(routes.shortest.route_stats.total_distance_m)}</div>
-                      <div>Time: {RoutingService.formatTime(routes.shortest.route_stats.total_time_s)}</div>
-                      <div>Safety Score: {Math.round(routes.shortest.route_stats.safety_score * 100)}%</div>
-                      <div>Crime Incidents: {routes.shortest.route_stats.crime_incidents_nearby}</div>
-                    </div>
-                  </div>
-
-                  {/* Safe Route */}
-                  <div className="bg-green-50 p-2 rounded border-l-4 border-green-500">
-                    <div className="flex items-center space-x-2 mb-1">
-                      <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                      <span className="text-sm font-medium text-green-800">Safe Route</span>
-                    </div>
-                    <div className="text-xs text-green-700 space-y-1">
-                      <div>Distance: {RoutingService.formatDistance(routes.safe.route_stats.total_distance_m)}</div>
-                      <div>Time: {RoutingService.formatTime(routes.safe.route_stats.total_time_s)}</div>
-                      <div>Safety Score: {Math.round(routes.safe.route_stats.safety_score * 100)}%</div>
-                      <div>Crime Incidents: {routes.safe.route_stats.crime_incidents_nearby}</div>
-                    </div>
-                  </div>
-
-                  {/* Comparison */}
-                  <div className="bg-gray-50 p-2 rounded text-xs text-gray-600">
-                    <div>Extra distance: {RoutingService.formatDistance(
-                      routes.safe.route_stats.total_distance_m - routes.shortest.route_stats.total_distance_m
-                    )}</div>
-                    <div>Extra time: {RoutingService.formatTime(
-                      routes.safe.route_stats.total_time_s - routes.shortest.route_stats.total_time_s
-                    )}</div>
-                    <div>Safety improvement: {Math.round(
-                      (routes.safe.route_stats.safety_score - routes.shortest.route_stats.safety_score) * 100
-                    )}%</div>
-                  </div>
-                </div>
-              )}
-
-              {/* Coordinates */}
-              <div className="pt-2 mt-2 border-t border-gray-200 space-y-1 text-xs text-gray-600">
-                <div>
-                  <span className="font-medium">Start:</span> [{startPoint.lng.toFixed(6)}, {startPoint.lat.toFixed(6)}]
-                </div>
-                <div>
-                  <span className="font-medium">End:</span> [{destinationPoint.lng.toFixed(6)}, {destinationPoint.lat.toFixed(6)}]
-                </div>
+        {/* Error State */}
+        {mapError && (
+          <div className="absolute inset-0 bg-red-50 flex items-center justify-center z-50 p-4">
+            <div className="text-center max-w-md">
+              <div className="text-red-500 text-xl mb-4">⚠️</div>
+              <h3 className="text-lg font-semibold text-red-800 mb-2">Map Error</h3>
+              <p className="text-red-600 text-sm mb-4">{mapError}</p>
+              <div className="text-xs text-gray-600 bg-white p-3 rounded border">
+                <p><strong>Quick Fix:</strong></p>
+                <p>1. Get a free token at <a href="https://account.mapbox.com" target="_blank" className="text-blue-600 underline">mapbox.com</a></p>
+                <p>2. Add it to your .env.local file</p>
+                <p>3. Restart the dev server</p>
               </div>
             </div>
-          )}
-        </div>
-      )}
+          </div>
+        )}
 
-      {/* Click Popup */}
-      {clickPopup && (
+        {/* Map Container */}
         <div 
-          className="absolute z-30 bg-white rounded-lg shadow-xl border border-gray-200 p-4 min-w-48"
-          style={{
-            left: `${clickPopup.x}px`,
-            top: `${clickPopup.y}px`,
-            transform: 'translate(-50%, -100%)',
-            marginTop: '-10px'
-          }}
-        >
-          <div className="text-center mb-3">
-            <div className="text-sm font-medium text-gray-900 mb-1">Location Coordinates</div>
-            <div className="text-xs text-gray-600 font-mono">
-              {clickPopup.lat.toFixed(6)}, {clickPopup.lng.toFixed(6)}
-            </div>
-          </div>
-          
-          <div className="flex gap-2">
-            <button
-              onClick={() => handleSetLocation(clickPopup.lng, clickPopup.lat, 'start')}
-              className="flex-1 px-3 py-2 bg-green-500 text-white text-xs font-medium rounded hover:bg-green-600 transition-colors"
-            >
-              Set as Start
-            </button>
-            <button
-              onClick={() => handleSetLocation(clickPopup.lng, clickPopup.lat, 'destination')}
-              className="flex-1 px-3 py-2 bg-red-500 text-white text-xs font-medium rounded hover:bg-red-600 transition-colors"
-            >
-              Set as End
-            </button>
-          </div>
-          
-          <button
-            onClick={() => setClickPopup(null)}
-            className="w-full mt-2 px-3 py-1 text-xs text-gray-500 hover:text-gray-700 transition-colors"
-          >
-            Cancel
-          </button>
-        </div>
-      )}
+          ref={mapContainer} 
+          className="w-full h-full"
+        />
+      </div>
 
-
-
-      {/* Map Container */}
-      <div 
-        ref={mapContainer} 
-        className="w-full h-full"
-        style={{ 
-          position: 'absolute', 
-          top: 0, 
-          left: 0,
-          right: 0,
-          bottom: 0,
-          width: '100%',
-          height: '100%',
-          zIndex: 1
-        }} 
+      {/* Sidebar - Mobile layout will be handled within the Sidebar component */}
+      <Sidebar
+        startPoint={startPoint}
+        destinationPoint={destinationPoint}
+        startInputValue={startInputValue}
+        destinationInputValue={destinationInputValue}
+        routes={routes}
+        isLoadingRoutes={isLoadingRoutes}
+        routeError={routeError}
+        onLocationSelect={handleLocationSelect}
+        onInputChange={handleInputChange}
+        onClear={clearPoints}
+        onCalculate={calculateRoutes}
       />
-
-      {/* Crime Data Status */}
-      {!isLoading && !mapError && (
-        <div className="absolute bottom-4 left-4 bg-green-100 border border-green-400 text-green-700 px-3 py-2 rounded text-sm z-10">
-          ✅ 3D Buildings + Crime data + Point selection ready
-        </div>
-      )}
     </div>
   );
 } 

@@ -62,10 +62,13 @@ export interface CalculateMultipleRequest {
 export interface CalculateMultipleResponse {
   success: boolean;
   message: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   shortest_route: any; // GeoJSON route data
   shortest_stats: RouteStats;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   safest_route: any; // GeoJSON route data
   safest_stats: RouteStats;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   comparison_stats: any; // Additional comparison data
 }
 
@@ -98,6 +101,7 @@ export interface ShortestRouteRequest {
 export interface ProcessedRoutes {
   shortest: RouteResponse;
   safe: RouteResponse;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   comparison?: any; // Additional comparison data from the new API
 }
 
@@ -282,7 +286,10 @@ class RoutingService {
    * Hardcoded routes for development/testing
    * TODO: Remove when API integration is complete
    */
-  private getHardcodedRoutes(request: RouteRequest): ProcessedRoutes {
+  private getHardcodedRoutes(
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    request: RouteRequest
+  ): ProcessedRoutes {
     console.log('📝 Using hardcoded route data for development');
 
     // Shortest route (blue) - from your first GeoJSON
@@ -490,13 +497,17 @@ class RoutingService {
   /**
    * Get comparison summary from the new API response
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   static getComparisonSummary(comparisonStats: any): string {
     if (!comparisonStats) return 'No comparison data available';
     
     try {
       // This method can be expanded based on what comparison_stats contains
       return JSON.stringify(comparisonStats, null, 2);
-    } catch (error) {
+    } catch (
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      error
+    ) {
       return 'Error parsing comparison data';
     }
   }

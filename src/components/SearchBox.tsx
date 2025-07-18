@@ -25,11 +25,13 @@ interface SearchBoxProps {
 
 export default function SearchBox({ 
   onLocationSelect, 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   placeholder = "Search for a location...", 
   className = "",
   startValue = '',
   destinationValue = '',
   onInputChange,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   onClear
 }: SearchBoxProps) {
   const [startQuery, setStartQuery] = useState(startValue);
@@ -85,6 +87,7 @@ export default function SearchBox({
       
       if (data.suggestions && data.suggestions.length > 0) {
         // Convert suggestions to our format
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const results: SearchResult[] = data.suggestions.map((suggestion: any, index: number) => {
           console.log(`📍 Processing suggestion ${index}:`, suggestion);
           
@@ -232,37 +235,22 @@ export default function SearchBox({
 
   return (
     <div ref={searchContainerRef} className={`relative ${className}`}>
-      {/* Simplified Card Container */}
-      <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
-        
-        {/* Header */}
-        <div className="px-5 py-3 bg-gradient-to-r from-gray-50 to-white border-b border-gray-100">
-          <div className="flex items-center justify-between">
-            <h3 className="text-base font-semibold text-gray-900">Where to?</h3>
-            {(startValue || destinationValue) && onClear && (
-              <button
-                onClick={onClear}
-                className="text-xs text-gray-500 hover:text-gray-700 px-2 py-1 hover:bg-gray-200 rounded transition-colors"
-              >
-                Clear all
-              </button>
-            )}
-          </div>
-        </div>
+      {/* Integrated Container with Grey Border */}
+      <div className="bg-white/10 border border-slate-300 rounded-xl overflow-hidden shadow-inner">
 
-        {/* Input Fields - Simplified */}
+        {/* Input Fields */}
         <div className="relative">
           
           {/* Start Location */}
-          <div className="relative border-b border-gray-100">
+          <div className="relative border-b border-slate-300">
             <div className="flex items-center px-5 py-4">
-              <div className="flex-1">
+              <div className="flex-1 relative">
                 <input
                   type="text"
                   value={startQuery}
                   onChange={(e) => handleInputChange(e, 'start')}
-                  placeholder="Pickup location"
-                  className="w-full text-gray-900 placeholder-gray-500 bg-transparent border-none outline-none text-base"
+                  placeholder="Add starting point"
+                  className="w-full text-slate-800 placeholder-slate-500 bg-transparent border-none outline-none text-base rounded transition-colors pr-8"
                   onFocus={() => {
                     setActiveField('start');
                     if (suggestions.length > 0 && startQuery.length >= 2) {
@@ -270,28 +258,47 @@ export default function SearchBox({
                     }
                   }}
                 />
-                {!startQuery && (
-                  <p className="text-sm text-gray-400 mt-1">Enter pickup address</p>
+                {startQuery && (
+                  <button
+                    onClick={() => {
+                      setStartQuery('');
+                      if (onInputChange) {
+                        onInputChange('', 'start');
+                      }
+                    }}
+                    className="absolute right-0 top-1/2 transform -translate-y-1/2 w-6 h-6 rounded-full bg-slate-400/20 hover:bg-slate-400/40 flex items-center justify-center transition-colors"
+                  >
+                    <svg className="w-3 h-3 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
                 )}
               </div>
-              {isLoading && activeField === 'start' && (
-                <div className="flex-shrink-0 ml-3">
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500"></div>
-                </div>
-              )}
             </div>
+            {/* Loading bar for start field */}
+            {isLoading && activeField === 'start' && (
+              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-slate-200 overflow-hidden">
+                <div className="h-full bg-cyan-500 animate-pulse"></div>
+                <div className="absolute top-0 left-0 h-full w-8 bg-cyan-600 animate-bounce" 
+                     style={{ 
+                       animation: 'slide 1.5s ease-in-out infinite',
+                       animationName: 'slide'
+                     }}>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Destination Location */}
           <div className="relative">
             <div className="flex items-center px-5 py-4">
-              <div className="flex-1">
+              <div className="flex-1 relative">
                 <input
                   type="text"
                   value={destinationQuery}
                   onChange={(e) => handleInputChange(e, 'destination')}
-                  placeholder="Where to?"
-                  className="w-full text-gray-900 placeholder-gray-500 bg-transparent border-none outline-none text-base"
+                  placeholder="Add destination"
+                  className="w-full text-slate-800 placeholder-slate-500 bg-transparent border-none outline-none text-base rounded transition-colors pr-8"
                   onFocus={() => {
                     setActiveField('destination');
                     if (suggestions.length > 0 && destinationQuery.length >= 2) {
@@ -299,59 +306,90 @@ export default function SearchBox({
                     }
                   }}
                 />
+                {destinationQuery && (
+                  <button
+                    onClick={() => {
+                      setDestinationQuery('');
+                      if (onInputChange) {
+                        onInputChange('', 'destination');
+                      }
+                    }}
+                    className="absolute right-0 top-1/2 transform -translate-y-1/2 w-6 h-6 rounded-full bg-slate-400/20 hover:bg-slate-400/40 flex items-center justify-center transition-colors"
+                  >
+                    <svg className="w-3 h-3 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                )}
               </div>
-              {isLoading && activeField === 'destination' && (
-                <div className="flex-shrink-0 ml-3">
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500"></div>
-                </div>
-              )}
             </div>
+            {/* Loading bar for destination field */}
+            {isLoading && activeField === 'destination' && (
+              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-slate-200 overflow-hidden">
+                <div className="h-full bg-cyan-500 animate-pulse"></div>
+                <div className="absolute top-0 left-0 h-full w-8 bg-cyan-600" 
+                     style={{ 
+                       animation: 'slide 1.5s ease-in-out infinite',
+                       animationName: 'slide'
+                     }}>
+                </div>
+              </div>
+            )}
           </div>
         </div>
+
+        {/* Integrated Suggestions - Push Content Down */}
+        {showSuggestions && suggestions.length > 0 && (
+          <div className="border-t border-slate-300 bg-white/5 animate-in slide-in-from-top-2 duration-300">
+            <div className="max-h-60 md:max-h-80 overflow-y-auto sidebar-scroll">
+              {suggestions.map((suggestion, index) => (
+                <div
+                  key={suggestion.id || index}
+                  onClick={() => handleSuggestionSelect(suggestion)}
+                  className="px-5 py-4 hover:bg-white/30 cursor-pointer border-b border-slate-300/20 last:border-b-0 transition-all duration-200"
+                >
+                  <div className="flex items-center">
+                    <div className="flex-shrink-0 w-8 h-8 rounded-full bg-white/40 border border-slate-300/40 flex items-center justify-center mr-4">
+                      <svg className="w-4 h-4 text-slate-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                      </svg>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="font-semibold text-slate-900 truncate">{suggestion.name}</div>
+                      <div className="text-sm text-slate-700 truncate">{suggestion.full_address}</div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* No results message - Integrated */}
+        {showSuggestions && !isLoading && suggestions.length === 0 && activeField && (
+          <div className="border-t border-slate-300 bg-white/5 p-6 animate-in slide-in-from-top-2 duration-300">
+            <div className="text-center">
+              <div className="text-slate-600 mb-2">
+                <svg className="w-8 h-8 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+              </div>
+              <p className="text-slate-700 font-medium">No locations found</p>
+              <p className="text-sm text-slate-600 mt-1">Try a different search term</p>
+            </div>
+          </div>
+        )}
       </div>
 
-      {/* Suggestions Dropdown */}
-      {showSuggestions && suggestions.length > 0 && (
-        <div className="absolute z-50 w-full mt-2 bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden">
-          <div className="max-h-80 overflow-y-auto">
-            {suggestions.map((suggestion, index) => (
-              <div
-                key={suggestion.id || index}
-                onClick={() => handleSuggestionSelect(suggestion)}
-                className="px-5 py-4 hover:bg-gray-50 cursor-pointer border-b border-gray-50 last:border-b-0 transition-colors"
-              >
-                <div className="flex items-center">
-                  <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center mr-4">
-                    <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                    </svg>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="font-medium text-gray-900 truncate">{suggestion.name}</div>
-                    <div className="text-sm text-gray-500 truncate">{suggestion.full_address}</div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* No results message */}
-      {showSuggestions && !isLoading && suggestions.length === 0 && activeField && (
-        <div className="absolute z-50 w-full mt-2 bg-white rounded-xl shadow-xl border border-gray-100 p-6">
-          <div className="text-center">
-            <div className="text-gray-400 mb-2">
-              <svg className="w-8 h-8 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
-            </div>
-            <p className="text-gray-500">No locations found</p>
-            <p className="text-sm text-gray-400 mt-1">Try a different search term</p>
-          </div>
-        </div>
-      )}
+      {/* CSS Animation */}
+      <style jsx>{`
+        @keyframes slide {
+          0% { transform: translateX(-100%); }
+          50% { transform: translateX(calc(100vw - 2rem)); }
+          100% { transform: translateX(-100%); }
+        }
+      `}</style>
     </div>
   );
-} 
+}
