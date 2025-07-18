@@ -1,4 +1,4 @@
-name = "ventr-worker"
+name = "ventr"
 main = "worker.js"
 compatibility_date = "2025-07-18"
 
