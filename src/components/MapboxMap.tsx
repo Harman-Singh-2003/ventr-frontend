@@ -31,6 +31,24 @@ interface ClickPopup {
   y: number;
 }
 
+// Toronto center for validation
+const TORONTO_CENTER = { lat: 43.6532, lng: -79.3832 };
+const MAX_DISTANCE_KM = 30;
+
+// Haversine formula to calculate distance between two lat/lng points in km
+function getDistanceKm(lat1: number, lng1: number, lat2: number, lng2: number) {
+  const toRad = (x: number) => (x * Math.PI) / 180;
+  const R = 6371; // Earth radius in km
+  const dLat = toRad(lat2 - lat1);
+  const dLng = toRad(lng2 - lng1);
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
+    Math.sin(dLng / 2) * Math.sin(dLng / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+}
+
 export default function MapboxMap({ onRouteChange }: MapboxMapProps) {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
@@ -58,6 +76,10 @@ export default function MapboxMap({ onRouteChange }: MapboxMapProps) {
   
   // Use ref to track the latest calculation to handle race conditions
   const latestCalculationId = useRef<number>(0);
+
+  // Popup for out-of-bounds selection
+  const [popupMessage, setPopupMessage] = useState<string | null>(null);
+  const popupTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     // Check if we have a token
@@ -323,6 +345,17 @@ export default function MapboxMap({ onRouteChange }: MapboxMapProps) {
 
   // Handle setting a location from click popup
   const handleSetLocation = async (lng: number, lat: number, type: 'start' | 'destination') => {
+    // Check if within 30km of Toronto center
+    const dist = getDistanceKm(lat, lng, TORONTO_CENTER.lat, TORONTO_CENTER.lng);
+    console.log(`[DEBUG] handleSetLocation: lat=${lat}, lng=${lng}, dist=${dist}`);
+    if (dist > MAX_DISTANCE_KM) {
+      setPopupMessage('Select locations within Toronto');
+      if (popupTimeoutRef.current) clearTimeout(popupTimeoutRef.current);
+      popupTimeoutRef.current = setTimeout(() => setPopupMessage(null), 2000);
+      if (type === 'start') setStartInputValue('');
+      else setDestinationInputValue('');
+      return;
+    }
     // Get address using reverse geocoding
     const address = await reverseGeocode(lng, lat);
     
@@ -396,6 +429,17 @@ export default function MapboxMap({ onRouteChange }: MapboxMapProps) {
 
   // Handle location selection from search
   const handleLocationSelect = async (location: { lng: number; lat: number; address: string }, type: 'start' | 'destination') => {
+    // Check if within 30km of Toronto center
+    const dist = getDistanceKm(location.lat, location.lng, TORONTO_CENTER.lat, TORONTO_CENTER.lng);
+    console.log(`[DEBUG] handleLocationSelect: lat=${location.lat}, lng=${location.lng}, dist=${dist}`);
+    if (dist > MAX_DISTANCE_KM) {
+      setPopupMessage('Select locations within Toronto');
+      if (popupTimeoutRef.current) clearTimeout(popupTimeoutRef.current);
+      popupTimeoutRef.current = setTimeout(() => setPopupMessage(null), 2000);
+      if (type === 'start') setStartInputValue('');
+      else setDestinationInputValue('');
+      return;
+    }
     if (type === 'start') {
       setStartPoint(location);
       setStartInputValue(location.address);
@@ -633,27 +677,13 @@ export default function MapboxMap({ onRouteChange }: MapboxMapProps) {
     });
   };
 
-  // Effect to calculate routes when both points are available (with debouncing)
+  // Only clear routes if points are missing
   useEffect(() => {
-    if (startPoint && destinationPoint) {
-      console.log('⏰ Route calculation requested, debouncing...');
-      
-      // Debounce route calculation to prevent multiple rapid API calls
-      const timeoutId = setTimeout(() => {
-        calculateRoutes();
-      }, 300); // 300ms debounce
-
-      return () => {
-        console.log('🚫 Cancelling previous route calculation timeout');
-        clearTimeout(timeoutId);
-      };
-    } else {
-      // Clear routes if points are missing
-      console.log('🧹 Clearing routes - missing start or destination point');
+    if (!(startPoint && destinationPoint)) {
       setRoutes(null);
       removeRoutesFromMap();
     }
-  }, [startPoint, destinationPoint, calculateRoutes]);
+  }, [startPoint, destinationPoint]);
 
   const add3DBuildings = () => {
     if (!map.current) return;
@@ -777,6 +807,12 @@ map.current.addLayer({
 
   return (
     <div className="w-full h-full relative">
+      {/* Out-of-bounds popup */}
+      {popupMessage && (
+        <div className="fixed top-8 left-1/2 z-50 -translate-x-1/2 bg-red-500 text-white px-6 py-3 rounded-xl shadow-lg text-base font-semibold animate-fade-in-out pointer-events-none">
+          {popupMessage}
+        </div>
+      )}
       {/* Map Section - Full width background */}
       <div className="absolute inset-0">
         {/* Loading State */}
@@ -825,6 +861,7 @@ map.current.addLayer({
         onLocationSelect={handleLocationSelect}
         onInputChange={handleInputChange}
         onClear={clearPoints}
+        onCalculate={calculateRoutes}
       />
     </div>
   );

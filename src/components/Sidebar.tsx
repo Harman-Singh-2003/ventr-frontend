@@ -22,6 +22,7 @@ interface SidebarProps {
   onLocationSelect: (location: { lng: number; lat: number; address: string }, type: 'start' | 'destination') => void;
   onInputChange: (value: string, type: 'start' | 'destination') => void;
   onClear: () => void;
+  onCalculate: () => void;
 }
 
 export default function Sidebar({
@@ -34,7 +35,8 @@ export default function Sidebar({
   routeError,
   onLocationSelect,
   onInputChange,
-  onClear
+  onClear,
+  onCalculate
 }: SidebarProps) {
   return (
     <>
@@ -60,6 +62,26 @@ export default function Sidebar({
               onInputChange={onInputChange}
               onClear={onClear}
             />
+            {/* Button Row for Mobile - below SearchBox */}
+            {(startPoint || destinationPoint || startInputValue || destinationInputValue) && (
+              <div className="flex justify-end gap-2 mt-4">
+                <button
+                  onClick={onCalculate}
+                  className="flex-1 text-base px-4 py-2 rounded-lg bg-gradient-to-r from-blue-500 to-cyan-500 text-white font-bold shadow-lg hover:from-blue-600 hover:to-cyan-600 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                  aria-label="Calculate route"
+                  disabled={!(startPoint && destinationPoint)}
+                >
+                  Calculate
+                </button>
+                <button
+                  onClick={onClear}
+                  className="ml-2 text-xs px-3 py-2 rounded-lg border border-gray-300 text-gray-500 bg-white/70 hover:bg-gray-100 transition shadow"
+                  aria-label="Clear all points and inputs"
+                >
+                  Clear
+                </button>
+              </div>
+            )}
           </div>
         </div>
 
@@ -250,6 +272,26 @@ export default function Sidebar({
             onInputChange={onInputChange}
             onClear={onClear}
           />
+          {/* Button Row for Desktop - below SearchBox */}
+          {(startPoint || destinationPoint || startInputValue || destinationInputValue) && (
+            <div className="flex justify-end gap-2 mt-4">
+              <button
+                onClick={onCalculate}
+                className="flex-1 text-lg px-5 py-3 rounded-xl bg-gradient-to-r from-blue-500 to-cyan-500 text-white font-bold shadow-lg hover:from-blue-600 hover:to-cyan-600 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                aria-label="Calculate route"
+                disabled={!(startPoint && destinationPoint)}
+              >
+                Calculate
+              </button>
+              <button
+                onClick={onClear}
+                className="ml-2 text-xs px-4 py-3 rounded-xl border border-gray-300 text-gray-500 bg-white/70 hover:bg-gray-100 transition shadow"
+                aria-label="Clear all points and inputs"
+              >
+                Clear
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Route Information Section */}
