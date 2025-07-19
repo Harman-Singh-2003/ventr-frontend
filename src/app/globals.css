@@ -4,6 +4,19 @@
 :root {
   --background: #ffffff; /* white */
   --foreground: #111827; /* gray-900 */
+  
+  /* Safe area variables for mobile devices */
+  --sat: env(safe-area-inset-top);
+  --sar: env(safe-area-inset-right); 
+  --sab: env(safe-area-inset-bottom);
+  --sal: env(safe-area-inset-left);
+}
+
+/* Mobile viewport height fix */
+html {
+  height: 100%;
+  height: 100vh;
+  height: 100dvh; /* Dynamic viewport height for modern browsers */
 }
 
 @keyframes pulseGlass {
@@ -45,6 +58,11 @@ body {
   color: var(--foreground);
   font-family: system-ui, -apple-system, sans-serif;
   overflow: hidden; /* Prevent body scroll on mobile */
+  height: 100%;
+  height: 100vh;
+  height: 100dvh; /* Dynamic viewport height */
+  margin: 0;
+  padding: 0;
 }
 
 /* Enhanced marker styles for visibility on light map */
@@ -171,4 +189,23 @@ body {
 .click-popup.mapboxgl-popup-anchor-bottom-right .mapboxgl-popup-content {
   margin: 0 !important;
   margin-bottom: 12px !important;
+}
+
+/* Mobile-specific utilities */
+@media (max-width: 768px) {
+  /* Ensure mobile scrolling works properly */
+  .mobile-scroll-container {
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
+  }
+  
+  /* Mobile bottom safe area */
+  .mobile-bottom-safe {
+    padding-bottom: max(env(safe-area-inset-bottom), 12px);
+  }
+  
+  /* Mobile top safe area */
+  .mobile-top-safe {
+    padding-top: max(env(safe-area-inset-top), 12px);
+  }
 }

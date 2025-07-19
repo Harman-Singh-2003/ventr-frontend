@@ -13,7 +13,7 @@ if (process.env.NODE_ENV === 'development') {
   mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN || '';
 } else if (typeof window !== 'undefined') {
   try {
-    const res = await fetch('/api/mapbox-token');
+    const res = await fetch('https://ventr.harman-singh.com/api/mapbox-token');
     const data = await res.json();
     mapboxgl.accessToken = data.token || '';
   } catch (err) {

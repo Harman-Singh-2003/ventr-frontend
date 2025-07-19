@@ -43,7 +43,15 @@ export default function Sidebar({
       {/* Mobile Layout */}
       <div className="md:hidden">
         {/* Mobile Header with Search - Fixed at top */}
-        <div className="absolute top-0 left-0 right-0 z-20 bg-white/15 backdrop-blur-xl border-b border-white/30 shadow-lg max-h-70vh] overflow-y-auto sidebar-scroll">
+        <div 
+          className="absolute top-0 left-0 right-0 z-20 bg-white/15 backdrop-blur-xl border-b border-white/30 shadow-lg max-h-70vh] overflow-y-auto sidebar-scroll mobile-scroll-container"
+          style={{
+            paddingTop: 'max(env(safe-area-inset-top), 0.75rem)',
+            paddingLeft: 'env(safe-area-inset-left)',
+            paddingRight: 'env(safe-area-inset-right)',
+            marginTop: 'env(safe-area-inset-top)'
+          }}
+        >
           <div className="p-3">
             <div className="flex items-center space-x-2 mb-3">
               <div className="w-8 h-8 bg-gradient-to-r from-cyan-500 to-blue-600 rounded-lg flex items-center justify-center shadow-lg">
@@ -87,7 +95,15 @@ export default function Sidebar({
 
         {/* Mobile Bottom Sheet with Route Info - Fixed at bottom */}
         {startPoint && destinationPoint && (
-          <div className="absolute bottom-0 left-0 right-0 z-20 bg-white/15 backdrop-blur-xl border-t border-white/30 shadow-2xl max-h-[25vh] overflow-y-auto sidebar-scroll">
+          <div 
+            className="absolute bottom-0 left-0 right-0 z-20 bg-white/15 backdrop-blur-xl border-t border-white/30 shadow-2xl max-h-[30vh] overflow-y-auto sidebar-scroll mobile-scroll-container"
+            style={{
+              paddingBottom: 'max(env(safe-area-inset-bottom), 0.75rem)',
+              paddingLeft: 'env(safe-area-inset-left)',
+              paddingRight: 'env(safe-area-inset-right)',
+              marginBottom: 'env(safe-area-inset-bottom)'
+            }}
+          >
             <div className="p-3 space-y-3">
               {/* Loading state */}
               {isLoadingRoutes && (
