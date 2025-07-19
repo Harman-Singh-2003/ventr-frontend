@@ -1,13 +1,27 @@
 import { getAssetFromKV } from '@cloudflare/kv-asset-handler';
 
-addEventListener('fetch', (event) => {
-  event.respondWith(handleEvent(event));
-});
+export default {
+  async fetch(request, env) {
+    const url = new URL(request.url);
 
-async function handleEvent(event) {
-  try {
-    return await getAssetFromKV(event);
-  } catch (e) {
-    return new Response('Not found', { status: 404 });
-  }
-}
+    // Handle the token API route
+    if (url.pathname === "/api/mapbox-token") {
+      return new Response(
+        JSON.stringify({ token: env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN }),
+        {
+          headers: {
+            "Content-Type": "application/json",
+            "Access-Control-Allow-Origin": "*",
+          },
+        }
+      );
+    }
+
+    // Handle static assets
+    try {
+      return await getAssetFromKV({ request }, env);
+    } catch (e) {
+      return new Response("Not found", { status: 404 });
+    }
+  },
+};
