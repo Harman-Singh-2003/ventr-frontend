@@ -11,6 +11,7 @@ import { routingService, ProcessedRoutes } from "../services/routingService";
 // Set the access token
 if (process.env.NODE_ENV === 'development') {
   mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN || '';
+  console.log(mapboxgl.accessToken ? "✅ Mapbox access token set" : "❌ Mapbox access token not set");
 } else if (typeof window !== 'undefined') {
   try {
     const res = await fetch('https://ventr.harman-singh.com/api/mapbox-token');
