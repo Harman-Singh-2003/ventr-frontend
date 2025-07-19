@@ -4,3 +4,7 @@ compatibility_date = "2025-07-18"
 
 [site]
 bucket = "out"
+
+[env.production]
+zone_id = "ec66bd206ba9d4088c3e8f78a0c7b944"
+route = "ventr.harman-singh.com/api/*"
