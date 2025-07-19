@@ -9,12 +9,17 @@ import Sidebar from "./Sidebar";
 import { routingService, ProcessedRoutes } from "../services/routingService";
 
 // Set the access token
-if (process.env.NODE_ENV === "development") {
-  mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN || "";
-} else {
-  const res = await fetch("/api/mapbox-token");
-  const data = await res.json();
-  mapboxgl.accessToken = data.token || "";
+if (process.env.NODE_ENV === 'development') {
+  mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN || '';
+} else if (typeof window !== 'undefined') {
+  try {
+    const res = await fetch('/api/mapbox-token');
+    const data = await res.json();
+    mapboxgl.accessToken = data.token || '';
+  } catch (err) {
+    console.error('Failed to fetch Mapbox token:', err);
+    mapboxgl.accessToken = ''; // fallback to avoid crash
+  }
 }
 
 interface LocationPoint {
