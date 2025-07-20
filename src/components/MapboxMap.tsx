@@ -134,7 +134,39 @@ export default function MapboxMap() {
 
       // Handle map errors
       map.current.on("error", (e) => {
-        console.error("Map error:", e);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const errorObj = e as any;
+        const errorMessage = e.error?.message || "";
+        
+        // Check if this is a crime data source error (non-critical)
+        const isCrimeDataError = errorObj.sourceId === "crime-data" || 
+                                errorObj.source?.id === "crime-data" ||
+                                errorObj.source?.url?.includes("harmansingh2003.9x73mbtr");
+        
+        // Check if this is a 403/permission error (often non-critical in dev)
+        const isPermissionError = errorMessage.includes("403") || errorMessage.includes("Forbidden");
+        
+        // Check if this is a telemetry/analytics error (non-critical)
+        const isTelemetryError = errorMessage.includes("events.mapbox.com") || 
+                                errorMessage.includes("ERR_BLOCKED_BY_CLIENT");
+        
+        if (isCrimeDataError) {
+          console.warn("🚧 Crime data unavailable - map will continue without crime visualization");
+          return; // Don't crash the map for crime data issues
+        }
+        
+        if (isPermissionError && !isCrimeDataError) {
+          console.warn("⚠️ Permission issue detected, but map should continue working");
+          return; // Don't crash for permission issues on non-critical resources
+        }
+        
+        if (isTelemetryError) {
+          // Silently ignore telemetry/analytics errors - these don't affect functionality
+          return;
+        }
+        
+        // Only log and handle critical map errors
+        console.error("❌ Critical map error:", e);
         setMapError(
           `Map failed to load: ${e.error?.message || "Unknown error"}`
         );
@@ -762,7 +794,9 @@ export default function MapboxMap() {
       map.current.setConfigProperty("basemap", "show3dBuildings", true);
       console.log("✅ Realistic 3D buildings enabled!");
     } catch (error) {
-      console.error("❌ Error enabling 3D buildings:", error);
+      console.warn("⚠️ 3D buildings could not be enabled:", error);
+      console.log("📍 Map will continue in 2D mode");
+      // Don't throw - let the map continue in 2D mode
     }
   };
 
@@ -784,7 +818,9 @@ export default function MapboxMap() {
       // Step 3: Add simple visualization layer
       addSimpleVisualization();
     } catch (error) {
-      console.error("❌ Step 2 Failed: Error adding crime data source:", error);
+      console.warn("⚠️ Crime data source could not be added:", error);
+      console.log("📍 Map will continue without crime data visualization");
+      // Don't throw - let the map continue working without crime data
     }
   };
 
@@ -900,8 +936,9 @@ export default function MapboxMap() {
         "✅ Step 3 Complete: Heatmap + Circle layers added with 3D occlusion!"
       );
     } catch (error) {
-      console.error("❌ Step 3 Failed with exact source-layer name:", error);
-      console.log("This means there might be an issue with the tileset itself");
+      console.warn("⚠️ Crime data visualization could not be added:", error);
+      console.log("📍 This may be due to data source issues - map will continue normally");
+      // Don't throw - let the map continue working without visualization layers
     }
   };
 
