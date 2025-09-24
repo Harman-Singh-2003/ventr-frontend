@@ -108,7 +108,7 @@ export interface ProcessedRoutes {
 class RoutingService {
   private baseUrl: string;
 
-  constructor(baseUrl: string = 'http://localhost:8000') { // User's API URL
+  constructor(baseUrl: string = 'https://ventr-api.harman-singh.com') { // User's API URL
     this.baseUrl = baseUrl;
   }
 
