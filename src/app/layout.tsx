@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Ventr - Safe Route Planning",
-  description: "Navigate safely with AI-powered route optimization",
+  description: "Navigate safely with route optimization",
 };
 
 export default function RootLayout({

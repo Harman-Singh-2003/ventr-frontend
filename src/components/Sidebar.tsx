@@ -44,9 +44,9 @@ export default function Sidebar({
       <div className="md:hidden">
         {/* Mobile Header with Search - Fixed at top */}
         <div 
-          className="absolute top-0 left-0 right-0 z-20 bg-white/15 backdrop-blur-xl border-b border-white/30 shadow-lg max-h-70vh] overflow-y-auto sidebar-scroll mobile-scroll-container"
+          className="absolute top-0 left-0 right-10 z-20 max-h-70vh] overflow-y-auto sidebar-scroll mobile-scroll-container"
           style={{
-            paddingTop: 'max(env(safe-area-inset-top), 0.75rem)',
+            paddingTop: 'max(env(safe-area-inset-top), 0.5 rem)',
             paddingLeft: 'env(safe-area-inset-left)',
             paddingRight: 'env(safe-area-inset-right)',
             marginTop: 'env(safe-area-inset-top)'
@@ -54,13 +54,6 @@ export default function Sidebar({
         >
           <div className="p-3">
             <div className="flex items-center space-x-2 mb-3">
-              <div className="w-8 h-8 bg-gradient-to-r from-cyan-500 to-blue-600 rounded-lg flex items-center justify-center shadow-lg">
-                <Navigation className="w-4 h-4 text-white" />
-              </div>
-              <div>
-                <h1 className="text-lg font-bold text-slate-800">Ventr</h1>
-                <p className="text-xs text-slate-600">Safe route planning</p>
-              </div>
             </div>
             <SearchBox 
               onLocationSelect={onLocationSelect}
@@ -83,7 +76,7 @@ export default function Sidebar({
                 </button>
                 <button
                   onClick={onClear}
-                  className="ml-2 text-xs px-3 py-2 rounded-lg border border-gray-300 text-gray-500 bg-white/70 hover:bg-gray-100 transition shadow"
+                  className="ml-2 text-xs px-3 py-2 rounded-lg border border-gray-300 text-gray-500 bg-white/90 hover:bg-gray-100 transition shadow"
                   aria-label="Clear all points and inputs"
                 >
                   Clear
@@ -96,7 +89,7 @@ export default function Sidebar({
         {/* Mobile Bottom Sheet with Route Info - Fixed at bottom */}
         {startPoint && destinationPoint && (
           <div 
-            className="absolute bottom-0 left-0 right-0 z-20 bg-white/15 backdrop-blur-xl border-t border-white/30 shadow-2xl max-h-[30vh] overflow-y-auto sidebar-scroll mobile-scroll-container"
+            className="absolute bottom-0 left-0 right-0 z-20 bg-white/15 backdrop-blur-xl border-t border-white/30 shadow-2xl max-h-[25vh] overflow-y-auto sidebar-scroll mobile-scroll-container"
             style={{
               paddingBottom: 'max(env(safe-area-inset-bottom), 0.75rem)',
               paddingLeft: 'env(safe-area-inset-left)',

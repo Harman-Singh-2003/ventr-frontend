@@ -236,7 +236,7 @@ export default function SearchBox({
   return (
     <div ref={searchContainerRef} className={`relative ${className}`}>
       {/* Integrated Container with Grey Border */}
-      <div className="bg-white/10 border border-slate-300 rounded-xl overflow-hidden shadow-inner">
+      <div className="border border-slate-300 rounded-xl overflow-hidden shadow-inner bg-white/15 backdrop-blur-xl border-b border-white/15 shadow-lg">
 
         {/* Input Fields */}
         <div className="relative">
