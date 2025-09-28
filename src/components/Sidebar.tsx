@@ -249,7 +249,7 @@ export default function Sidebar({
               </div>
               <h3 className="text-lg font-bold text-slate-800 mb-2">Plan Your Route</h3>
               <p className="text-xs text-slate-600 leading-relaxed">
-                Enter your destination to discover safe walking routes.
+                Click on the map to discover safe walking routes.
               </p>
             </div>
           </div>
