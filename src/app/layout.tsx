@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Ventr - Safe Route Planning",
+  title: "Polaris - Safe Route Planning",
   description: "Navigate safely with route optimization",
 };
 

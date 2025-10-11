@@ -265,7 +265,7 @@ export default function Sidebar({
               <Navigation className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h1 className="text-3xl font-bold text-slate-800">Ventr</h1>
+              <h1 className="text-3xl font-bold text-slate-800">Polaris</h1>
               <p className="text-slate-600">Safe route planning</p>
             </div>
           </div>

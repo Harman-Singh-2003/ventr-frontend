@@ -14,7 +14,7 @@ if (process.env.NODE_ENV === 'development') {
   console.log(mapboxgl.accessToken ? "✅ Mapbox access token set" : "❌ Mapbox access token not set");
 } else if (typeof window !== 'undefined') {
   try {
-    const res = await fetch('https://ventr.harman-singh.com/api/mapbox-token');
+    const res = await fetch('https://polaris.harman-singh.com/api/mapbox-token');
     const data = await res.json();
     mapboxgl.accessToken = data.token || '';
   } catch (err) {
