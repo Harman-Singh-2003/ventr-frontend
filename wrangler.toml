@@ -6,6 +6,6 @@ compatibility_date = "2025-07-18"
 bucket = "out"
 
 [env.production]
-name = "polaris"
+name = "ventr"
 zone_id = "ec66bd206ba9d4088c3e8f78a0c7b944"
 route = "polaris.harman-singh.com/*"
