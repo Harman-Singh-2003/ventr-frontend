@@ -1,6 +1,6 @@
 import React from 'react';
 import Image from 'next/image';
-import { MapPin, Clock, Route, ShieldCheck, AlertTriangle, Zap, Navigation } from 'lucide-react';
+import { MapPin, Clock, Route, ShieldCheck, AlertTriangle, Zap } from 'lucide-react';
 import SearchBox from './SearchBox';
 import OpenRouteInMapsButton from './OpenRouteInMapsButton';
 import { ProcessedRoutes } from '../services/routingService';
