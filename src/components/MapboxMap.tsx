@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useRef, useEffect, useState, useCallback } from "react";
+import Image from "next/image";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 import ReactDOMServer from "react-dom/server";
@@ -972,10 +973,33 @@ export default function MapboxMap() {
       <div className="absolute inset-0">
         {/* Loading State */}
         {isLoading && (
-          <div className="absolute inset-0 bg-gray-100 flex items-center justify-center z-50">
-            <div className="text-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
-              <p className="text-gray-600">Loading map...</p>
+          <div className="absolute inset-0 bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center z-50">
+            <div className="text-center max-w-sm mx-4">
+              {/* Logo with animated container */}
+              <div className="relative mb-8 flex justify-center">
+                <div className="relative">
+                  <div className="w-24 h-24 md:w-32 md:h-32 rounded-full flex items-center justify-center shadow-2xl overflow-hidden">
+                    <Image 
+                      src="/Images/polaris_logo.png" 
+                      alt="Polaris Logo" 
+                      width={96} 
+                      height={96} 
+                      className="w-full h-full object-cover" 
+                    />
+                  </div>
+                  {/* Animated ring around logo */}
+                  <div className="absolute inset-0 border-4 border-cyan-200/50 rounded-full animate-spin border-t-cyan-400"></div>
+                </div>
+              </div>
+              
+              {/* App name and description */}
+              <h1 className="text-3xl md:text-4xl font-bold text-slate-800 mb-2">Polaris</h1>
+              <p className="text-lg md:text-xl text-slate-600 mb-6">Safe Route Planning</p>
+              
+              {/* Description */}
+              <p className="text-sm md:text-base text-slate-500 leading-relaxed">
+                Discover safe walking routes that help you avoid crime hotspots and dangerous areas.
+              </p>
             </div>
           </div>
         )}

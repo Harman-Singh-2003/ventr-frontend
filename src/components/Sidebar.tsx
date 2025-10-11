@@ -1,4 +1,5 @@
 import React from 'react';
+import Image from 'next/image';
 import { MapPin, Clock, Route, ShieldCheck, AlertTriangle, Zap, Navigation } from 'lucide-react';
 import SearchBox from './SearchBox';
 import OpenRouteInMapsButton from './OpenRouteInMapsButton';
@@ -244,8 +245,10 @@ export default function Sidebar({
         {(!startPoint || !destinationPoint) && (
           <div className="absolute bottom-3 left-3 right-3 z-20 bg-white/15 backdrop-blur-xl border border-white/30 rounded-lg shadow-2xl p-4">
             <div className="text-center">
-              <div className="w-12 h-12 bg-gradient-to-r from-cyan-500 to-blue-600 rounded-lg flex items-center justify-center mx-auto mb-3 shadow-xl">
-                <MapPin className="w-6 h-6 text-white" />
+              <div className="w-12 h-12 rounded-lg flex items-center justify-center mx-auto mb-3">
+              <div className="w-12 h-12 rounded-full flex items-center justify-center shadow-lg overflow-hidden">
+              <Image src="/Images/polaris_logo.png" alt="Polaris Logo" width={48} height={48} className="w-full h-full object-cover" />
+            </div>
               </div>
               <h3 className="text-lg font-bold text-slate-800 mb-2">Plan Your Route</h3>
               <p className="text-xs text-slate-600 leading-relaxed">
@@ -261,8 +264,8 @@ export default function Sidebar({
         {/* Header */}
         <div className="p-5 border-b border-white/20">
           <div className="flex items-center space-x-4">
-            <div className="w-12 h-12 bg-gradient-to-r from-cyan-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg">
-              <Navigation className="w-6 h-6 text-white" />
+            <div className="w-12 h-12 rounded-full flex items-center justify-center shadow-lg overflow-hidden">
+              <Image src="/Images/polaris_logo.png" alt="Polaris Logo" width={48} height={48} className="w-full h-full object-cover" />
             </div>
             <div>
               <h1 className="text-3xl font-bold text-slate-800">Polaris</h1>
@@ -455,7 +458,7 @@ export default function Sidebar({
                 </div>
                 <h3 className="text-2xl font-bold text-slate-800 mb-3">Plan Your Route</h3>
                 <p className="text-slate-600 leading-relaxed">
-                  Enter your destination to discover safe walking routes that avoid crime hotspots.
+                  Click on the map to discover safe walking routes that avoid crime hotspots.
                 </p>
               </div>
             </div>
