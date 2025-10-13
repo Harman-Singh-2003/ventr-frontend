@@ -994,7 +994,7 @@ export default function MapboxMap() {
               
               {/* App name and description */}
               <h1 className="text-3xl md:text-4xl font-bold text-slate-800 mb-2">Polaris</h1>
-              <p className="text-lg md:text-xl text-slate-600 mb-6">Safe Route Planning</p>
+              <p className="text-lg md:text-xl text-slate-600 mb-6">Safe Route Planning in Toronto</p>
               
               {/* Description */}
               <p className="text-sm md:text-base text-slate-500 leading-relaxed">

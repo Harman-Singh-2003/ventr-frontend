@@ -269,7 +269,7 @@ export default function Sidebar({
             </div>
             <div>
               <h1 className="text-3xl font-bold text-slate-800">Polaris</h1>
-              <p className="text-slate-600">Safe route planning</p>
+              <p className="text-slate-600">Safe Route Planning in Toronto</p>
             </div>
           </div>
         </div>
